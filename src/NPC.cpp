@@ -2,6 +2,7 @@
 
 #include <llapi/SendPacketAPI.h>
 #include <llapi/utils/Bstream.h>
+#include <llapi/mc/MinecraftPackets.hpp>
 #include <llapi/mc/DataItem.hpp>
 #include <llapi/mc/Player.hpp>
 
@@ -9,6 +10,17 @@ extern Logger logger;
 
 namespace LiteNPC {
 	unordered_map<unsigned long long, NPC*> loadedNPC;
+
+	void NPC::remove() {
+		loadedNPC.erase(this->runtimeId);
+
+		BinaryStream bs;
+		std::shared_ptr<Packet> pkt;
+		pkt = MinecraftPackets::createPacket(MinecraftPacketIds::RemoveActor);
+		bs.writeUnsignedVarInt64(ZigZag(this->actorId));
+		pkt->read(bs);
+		Level::sendPacketForAllPlayers(*pkt);
+	}
 
 	void NPC::spawn(Player* pl) {
 		BinaryStream bs;
@@ -41,12 +53,18 @@ namespace LiteNPC {
 	}
 
 	void NPC::onUse(Player* pl) {
-		pl->sendText("[NPC] Hi!");
+		callback(pl);
 	}
 
-	void NPC::create(string name, Vec3 pos, Vec2 rot, string skin) {
-		NPC* npc = new NPC(name, pos, rot, skin);
+	void NPC::setCallback(function<void(Player* pl)> callback) {
+		this->callback = callback;
+	}
+
+	NPC* NPC::create(string name, Vec3 pos, int dim, Vec2 rot, string skin) {
+		NPC* npc = new NPC(name, pos, dim, rot, skin);
 		loadedNPC[npc->runtimeId] = npc;
+		for (auto pl : Level::getAllPlayers()) npc->spawn(pl);
+		return npc;
 	}
 
 	void NPC::spawnAll(Player* pl) {

@@ -5,12 +5,9 @@
 
 #include "version.h"
 #include "NPC.h"
+#include "ScriptExporter.h"
 
 extern Logger logger;
-
-void PluginEnable() {
-	LiteNPC::NPC::create("test", Vec3(0, 0, 0), Vec2(0, 0), "");
-}
 
 void PluginInit() {
 	Event::PlayerInteractEntityEvent::subscribe([](const Event::PlayerInteractEntityEvent& ev) {
@@ -24,6 +21,6 @@ void PluginInit() {
 		return true;
 	});
 
-	Schedule::nextTick(PluginEnable);
+	LiteNPC::registerExports();
 }
 
