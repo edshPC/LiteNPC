@@ -10,9 +10,9 @@ using namespace std;
 
 namespace LiteNPC {
 
-	class NPC {
+	class __declspec(dllexport) NPC {
 	public:
-		NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player* pl)> callback = [](Player* pl) {}) :
+		NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> callback) :
 			name(name),
 			pos(pos.add(0.5f, 0.0f, 0.5f)),
 			dim(dim),
@@ -27,13 +27,14 @@ namespace LiteNPC {
 		void spawn(Player*);
 		void updateSkin(Player*);
 		void remove();
-		void setCallback(function<void(Player* pl)>);
+		void setCallback(function<void(Player*)>);
 
-		unsigned long long getRId() {
-			return runtimeId;
-		}
+		unsigned long long getRId() { return runtimeId; }
 
-		static NPC* create(string name, Vec3 pos, int dim, Vec2 rot, string skin);
+		void setName(string);
+		void setSkin(string);
+
+		static NPC* create(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> callback = [](Player* pl) {});
 		static void spawnAll(Player* pl);
 		static NPC* getByRId(unsigned long long rId);
 		static void saveSkin(string name, SerializedSkin&);

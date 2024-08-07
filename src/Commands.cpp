@@ -9,16 +9,7 @@ void SaveSkinCommand::execute(CommandOrigin const& ori, CommandOutput& output) c
 	ServerPlayer* sp = ori.getPlayer();
 	if (!sp->isPlayer()) return output.error("Команда доступна только для игроков");
 
-	auto skin = sp->getSkin();
-
-	skin.mId = "Custom" + mce::UUID().asString();
-	skin.mFullId = skin.mId + mce::UUID().asString();
-	skin.mCapeId = mce::UUID().asString();
-	std::stringstream stream;
-	stream << std::hex << RNG::rand<uint64_t>();
-	skin.mPlayFabId = stream.str();
-	skin.setIsTrustedSkin(true);
-
+	auto& skin = sp->getSkin();
 	LiteNPC::NPC::saveSkin(name, skin);
 
 	output.success();

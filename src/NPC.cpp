@@ -14,12 +14,12 @@ namespace LiteNPC {
 	unordered_map<string, SerializedSkin> loadedSkins;
 
 	void NPC::remove() {
-		loadedNPC.erase(this->runtimeId);
+		loadedNPC.erase(runtimeId);
 
 		BinaryStream bs;
 		std::shared_ptr<Packet> pkt;
 		pkt = MinecraftPackets::createPacket(MinecraftPacketIds::RemoveActor);
-		bs.writeUnsignedVarInt64(ZigZag(this->actorId));
+		bs.writeUnsignedVarInt64(ZigZag(actorId));
 		pkt->read(bs);
 		Level::sendPacketForAllPlayers(*pkt);
 	}
@@ -79,8 +79,8 @@ namespace LiteNPC {
 		this->callback = callback;
 	}
 
-	NPC* NPC::create(string name, Vec3 pos, int dim, Vec2 rot, string skin) {
-		NPC* npc = new NPC(name, pos, dim, rot, skin);
+	NPC* NPC::create(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player* pl)> callback) {
+		NPC* npc = new NPC(name, pos, dim, rot, skin, callback);
 		loadedNPC[npc->runtimeId] = npc;
 		for (auto pl : Level::getAllPlayers()) npc->spawn(pl);
 		return npc;
@@ -90,6 +90,28 @@ namespace LiteNPC {
 		for (auto entry : loadedNPC) {
 			entry.second->spawn(pl);
 		}
+	}
+
+	void NPC::setName(string name) {
+		this->name = name;
+
+		BinaryStream bs;
+		bs.writeUnsignedVarInt64(runtimeId);
+		vector<std::unique_ptr<DataItem>> items;
+		auto nametag = DataItem::create(ActorDataIDs::NAMETAG, name); //text
+		items.push_back(move(nametag));
+		bs.writeType(items); //meta
+		bs.writeUnsignedVarInt(0); //syncedProperties1
+		bs.writeUnsignedVarInt(0); //syncedProperties2
+		bs.writeUnsignedVarInt64(0); //tick?
+		std::shared_ptr<Packet> pkt = MinecraftPackets::createPacket(MinecraftPacketIds::SetActorData);
+		pkt->read(bs);
+		Level::sendPacketForAllPlayers(*pkt);
+	}
+
+	void NPC::setSkin(string skin) {
+		this->skinName = skin;
+		for (auto pl : Level::getAllPlayers()) updateSkin(pl);
 	}
 
 	NPC* NPC::getByRId(unsigned long long rId) {
@@ -102,8 +124,18 @@ namespace LiteNPC {
 
 	void NPC::saveSkin(string name, SerializedSkin& skin) {
 		loadedSkins[name] = skin;
+		auto& newSkin = loadedSkins.at(name);
+
+		newSkin.mId = "Custom" + mce::UUID().asString();
+		newSkin.mFullId = newSkin.mId + mce::UUID().asString();
+		newSkin.mCapeId = mce::UUID().asString();
+		std::stringstream stream;
+		stream << std::hex << RNG::rand<uint64_t>();
+		newSkin.mPlayFabId = stream.str();
+		newSkin.setIsTrustedSkin(true);
+
 		BinaryStream bs;
-		skin.write(bs);
+		newSkin.write(bs);
 		skinDB->set(name, bs.getAndReleaseData());
 	}
 
