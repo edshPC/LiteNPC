@@ -25,8 +25,9 @@ namespace LiteNPC {
 	}
 
 	void NPC::spawn(Player* pl) {
-		BinaryStream bs;
+		if ((int)pl->getDimensionId() != dim) return;
 
+		BinaryStream bs;
 		bs.writeType(uuid); //uuid
 		bs.writeString(name); //nick
 		bs.writeUnsignedVarInt64(runtimeId); //rId
