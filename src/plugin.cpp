@@ -1,11 +1,11 @@
 #include <llapi/LoggerAPI.h>
 #include <llapi/EventAPI.h>
 #include <llapi/mc/ServerPlayer.hpp>
-#include <llapi/ScheduleAPI.h>
 
 #include "version.h"
 #include "NPC.h"
 #include "ScriptExporter.h"
+#include "Commands.h"
 
 extern Logger logger;
 
@@ -21,6 +21,16 @@ void PluginInit() {
 		return true;
 	});
 
+	Event::RegCmdEvent::subscribe([](const Event::RegCmdEvent& ev) {
+		SaveSkinCommand::setup(ev.mCommandRegistry);
+		return true;
+	});
+
 	LiteNPC::registerExports();
+	LiteNPC::NPC::init();
+
+	std::ofstream file("plugins/LiteNPC/API.js");
+	file << LiteNPC::JS_API;
+	file.close();
 }
 

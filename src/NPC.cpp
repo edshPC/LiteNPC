@@ -1,15 +1,17 @@
 #include "NPC.h"
+#include "Database.h"
 
 #include <llapi/SendPacketAPI.h>
+#include <llapi/ScheduleAPI.h>
 #include <llapi/utils/Bstream.h>
 #include <llapi/mc/MinecraftPackets.hpp>
 #include <llapi/mc/DataItem.hpp>
-#include <llapi/mc/Player.hpp>
 
 extern Logger logger;
 
 namespace LiteNPC {
 	unordered_map<unsigned long long, NPC*> loadedNPC;
+	unordered_map<string, SerializedSkin> loadedSkins;
 
 	void NPC::remove() {
 		loadedNPC.erase(this->runtimeId);
@@ -50,6 +52,23 @@ namespace LiteNPC {
 
 		NetworkPacket<12> pkt(bs.getAndReleaseData());
 		pl->sendNetworkPacket(pkt);
+
+		Schedule::nextTick([this, pl]() { this->updateSkin(pl); });
+	}
+
+	void NPC::updateSkin(Player* pl) {
+		if (!loadedSkins.contains(skinName)) return;
+		auto skin = loadedSkins.at(skinName);
+
+		BinaryStream bs;
+		bs.writeType(uuid);
+		skin.write(bs);
+		bs.writeString(skinName);
+		bs.writeString("steve");
+		bs.writeBool(true);
+
+		NetworkPacket<93> pkt(bs.getAndReleaseData());
+		pl->sendNetworkPacket(pkt);
 	}
 
 	void NPC::onUse(Player* pl) {
@@ -80,5 +99,24 @@ namespace LiteNPC {
 			return nullptr;
 		}
 	}
+
+	void NPC::saveSkin(string name, SerializedSkin& skin) {
+		loadedSkins[name] = skin;
+		BinaryStream bs;
+		skin.write(bs);
+		skinDB->set(name, bs.getAndReleaseData());
+	}
+
+	void NPC::init() {
+		skinDB->iter([](string_view k, string_view v) -> bool {
+			string name(k), data(v);
+			loadedSkins[name] = SerializedSkin::createTrustedDefaultSerializedSkin();
+			SerializedSkin& skin = loadedSkins.at(name);
+			BinaryStream bs(data, true);
+			skin.read(bs);
+			return true;
+		});
+	}
+
 }
 

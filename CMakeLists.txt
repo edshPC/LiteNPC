@@ -62,7 +62,7 @@ add_link_options(
     /SUBSYSTEM:CONSOLE
 )
 
-add_library(${CMAKE_PROJECT_NAME} SHARED ${SRC_FILES_DIR} "src/NPC.h" "src/NPC.cpp"  "src/ScriptExporter.cpp" "src/ScriptExporter.h")
+add_library(${CMAKE_PROJECT_NAME} SHARED ${SRC_FILES_DIR} "src/NPC.h" "src/NPC.cpp"  "src/ScriptExporter.cpp" "src/ScriptExporter.h" "src/Commands.cpp" "src/Commands.h"  "src/Database.h" "src/Hook.cpp")
 
 target_link_libraries(${CMAKE_PROJECT_NAME} 
 	"${CMAKE_SOURCE_DIR}/SDK/lib/LiteLoader.lib"
