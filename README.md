@@ -2,6 +2,8 @@
 
 Simple plugin that provides API for creating Custom Player NPCs
 
+[Not implemented now]
+
 Example:
 ```js
 import LiteNPC from "plugins/LiteNPC/API.js"

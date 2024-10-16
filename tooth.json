@@ -1,0 +1,27 @@
+{
+    "format_version": 2,
+    "tooth": "github.com/edshPC/LiteNPC",
+    "version": "0.1.0",
+    "info": {
+        "name": "LiteNPC",
+        "description": "Simple NPC API for LL",
+        "author": "edshPC",
+        "tags": [
+            "platform:levilamina",
+            "type:mod",
+            "npc"
+        ]
+    },
+    "asset_url": "My Asset Url",
+    "prerequisites": {
+        "github.com/LiteLDev/LeviLamina": ">=0.13.4 <0.14.0"
+    },
+    "files": {
+        "place": [
+            {
+                "src": "LiteNPC/*",
+                "dest": "plugins/LiteNPC/"
+            }
+        ]
+    }
+}
