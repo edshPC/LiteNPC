@@ -8,7 +8,11 @@ cmake_policy(SET CMP0091 NEW)
 project(LiteNPC LANGUAGES CXX)
 
 # target
-add_library(LiteNPC SHARED "")
+add_library(LiteNPC SHARED ""
+        src/mod/EventListener.cpp
+        src/mod/Command.cpp
+        src/mod/Util.cpp
+        "src/mod/Util.h")
 set_target_properties(LiteNPC PROPERTIES OUTPUT_NAME "LiteNPC")
 set_target_properties(LiteNPC PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/windows/x64/release")
 set_target_properties(LiteNPC PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/windows/x64/release")
@@ -99,5 +103,6 @@ target_link_options(LiteNPC PRIVATE
 target_sources(LiteNPC PRIVATE
     src/mod/LiteNPCMod.cpp
     src/mod/MemoryOperators.cpp
+    src/model/NPC.cpp
 )
 

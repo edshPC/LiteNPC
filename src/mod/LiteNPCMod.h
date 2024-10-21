@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ll/api/mod/NativeMod.h"
+#include "ll/api/data/KeyValueDB.h"
 
 namespace LiteNPC {
 
@@ -8,6 +9,7 @@ class LiteNPCMod {
 
 public:
     static LiteNPCMod& getInstance();
+    static ll::data::KeyValueDB& getDB();
 
     LiteNPCMod(ll::mod::NativeMod& self) : mSelf(self) {}
 
@@ -22,7 +24,7 @@ public:
     /// @return True if the mod is disabled successfully.
     bool disable();
 
-    // TODO: Implement this method if you need to unload the mod.
+    // Implement this method if you need to unload the mod.
     // /// @return True if the mod is unloaded successfully.
     // bool unload();
 

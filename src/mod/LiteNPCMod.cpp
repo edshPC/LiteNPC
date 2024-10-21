@@ -1,30 +1,36 @@
 #include "mod/LiteNPCMod.h"
 
 #include <memory>
+#include <model/NPC.h>
 
 #include "ll/api/mod/RegisterHelper.h"
+#include "Global.h"
 
 namespace LiteNPC {
+void registerEvents();
+void registerCommands();
 
 static std::unique_ptr<LiteNPCMod> instance;
+static  std::unique_ptr<ll::data::KeyValueDB> db;
 
 LiteNPCMod& LiteNPCMod::getInstance() { return *instance; }
+ll::data::KeyValueDB &LiteNPCMod::getDB() { return *db; }
+
 
 bool LiteNPCMod::load() {
-    getSelf().getLogger().debug("Loading...");
-    // Code for loading the mod goes here.
+    db = std::make_unique<ll::data::KeyValueDB>(NATIVE_MOD.getDataDir());
+    registerEvents();
     return true;
 }
 
 bool LiteNPCMod::enable() {
-    getSelf().getLogger().debug("Enabling...");
-    // Code for enabling the mod goes here.
+    registerCommands();
+    auto npc = NPC::create("test", Vec3(156, -3, 784), 0, Vec2(0, 90), "edsh");
+    Util::setInterval([npc] { npc->emote("test"); }, 3000);
     return true;
 }
 
 bool LiteNPCMod::disable() {
-    getSelf().getLogger().debug("Disabling...");
-    // Code for disabling the mod goes here.
     return true;
 }
 
