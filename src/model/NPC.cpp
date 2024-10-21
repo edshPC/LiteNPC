@@ -4,6 +4,7 @@
 #include "mc/network/packet/PlayerSkinPacket.h"
 #include "mc/network/packet/RemoveActorPacket.h"
 #include "mc/network/packet/SetActorDataPacket.h"
+#include "mc/network/packet/MovePlayerPacket.h"
 #include "mc/network/packet/EmotePacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
 
@@ -12,7 +13,6 @@
 namespace LiteNPC {
     unordered_map<unsigned long long, NPC *> loadedNPC;
     unordered_map<string, SerializedSkin> loadedSkins;
-    unordered_map<string, string> loadedEmotions;  // name -> uuid
 
     void NPC::remove() {
         loadedNPC.erase(runtimeId);
@@ -48,12 +48,32 @@ namespace LiteNPC {
     }
 
     void NPC::emote(string emoteName) {
-        if (!loadedEmotions.contains(emoteName)) return;
+        if (!emotionsConfig.emotions.contains(emoteName)) return;
         EmotePacket pkt;
         pkt.mRuntimeId = runtimeId;
-        pkt.mPieceId = loadedEmotions.at(emoteName);
+        pkt.mPieceId = emotionsConfig.emotions.at(emoteName);
         pkt.mFlags = 0x2;
         pkt.sendToClients();
+    }
+
+    void NPC::moveTo(Vec3 dest, float speed) {
+        dest += Vec3(.5f, .0f, .5f);
+        Vec3 offset = dest - pos;
+        int steps = std::ceil(offset.length() / (.21585f * speed));
+        if (steps == 0) return;
+        Vec3 step = offset / steps;
+        Vec2 look = Vec3::rotationFromDirection(offset);
+        LOGGER.info("off {} step {} steps {}", offset.toString(), step.toString(), steps);
+        Util::setInterval([this, step, look] {
+            pos += step;
+            MovePlayerPacket pkt;
+            pkt.mPlayerID = runtimeId;
+            pkt.mPos = pos + Vec3(.0f, 1.62f,  .0f);
+            pkt.mRot = look;
+            pkt.mYHeadRot = look.y;
+            pkt.mOnGround = true;
+            pkt.sendToClients();
+        }, 0, steps);
     }
 
     void NPC::onUse(Player *pl) {
@@ -114,7 +134,8 @@ namespace LiteNPC {
     }
 
     void NPC::saveEmotion(string name, string emotionUuid) {
-        loadedEmotions[name] = emotionUuid;
+        emotionsConfig.emotions[name] = emotionUuid;
+        ll::config::saveConfig(emotionsConfig, NATIVE_MOD.getConfigDir() / "emotions.json");
     }
 
     void NPC::init() {

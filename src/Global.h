@@ -16,6 +16,7 @@
 
 #include "model/NPC.h"
 #include "mod/Util.h"
+#include "ll/api/Config.h"
 
 using namespace std;
 using std::string;

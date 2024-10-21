@@ -12,7 +12,7 @@ namespace LiteNPC {
 
 	class NPC {
 	public:
-		NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> cb = [](Player*) {}) :
+		NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> cb) :
 			name(name),
 			pos(pos + Vec3(0.5f, 0.0f, 0.5f)),
 			dim(dim),
@@ -27,6 +27,7 @@ namespace LiteNPC {
 		void spawn(Player*);
 		void updateSkin(Player*);
 		void emote(string emoteName);
+		void moveTo(Vec3 pos, float speed = 1);
 		void remove();
 		void setCallback(function<void(Player*)>);
 
@@ -35,7 +36,7 @@ namespace LiteNPC {
 		void setName(string);
 		void setSkin(string);
 
-		static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = [](Player* pl) {});
+		static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = {});
 		static void spawnAll(Player* pl);
 		static NPC* getByRId(unsigned long long rId);
 		static void saveSkin(string name, SerializedSkin&);

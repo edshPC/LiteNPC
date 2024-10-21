@@ -2,8 +2,13 @@
 
 #include "ll/api/mod/NativeMod.h"
 #include "ll/api/data/KeyValueDB.h"
+#include "Global.h"
 
 namespace LiteNPC {
+extern struct EmotionsConfig {
+    int version = 1;
+    std::unordered_map<std::string, std::string> emotions;
+} emotionsConfig;
 
 class LiteNPCMod {
 

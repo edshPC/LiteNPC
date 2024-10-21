@@ -21,8 +21,9 @@ EXECUTE_CMD(SaveSkin) {
     if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
     auto pl = static_cast<Player*>(ori.getEntity());
     auto& skin = pl->getSkin();
-    LiteNPC::NPC::saveSkin(param.name, skin);
-    out.success("Skin saved successfully");
+    NPC::saveSkin(param.name, skin);
+    pl->sendMessage("Skin saved");
+    out.success();
 }
 
 struct SaveAnimationParam {
@@ -34,7 +35,8 @@ EXECUTE_CMD(SaveAnimation) {
     if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
     auto pl = static_cast<Player*>(ori.getEntity());
     waitingEmotions[pl] = param.name;
-    out.success("Waiting for emotion");
+    pl->sendMessage("Waiting for emotion");
+    out.success();
 }
 
 void registerCommands() {
