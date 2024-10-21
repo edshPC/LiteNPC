@@ -106,7 +106,7 @@ function pack_mod(target,mod_define)
         io.writefile(manifestfile,formattedmanifest)
         cprint("${bright green}[mod Packer]: ${reset}mod already generated to " .. outputdir)
 
-        os.cp(outputdir, "D:\\mcpe\\bedrock-miku-1.21.3-0.13.5\\plugins_tocopy\\" .. mod_define.modName)
+        os.cp(outputdir, "D:\\mcpe\\bedrock-miku-1.21.3-0.13.5\\plugins_tocopy\\")
         cprint("Mod copied to server")
     else
         cprint("${bright yellow}warn: ${reset}not found manifest.json in root dir!")

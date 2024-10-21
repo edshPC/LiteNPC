@@ -5,6 +5,7 @@
 
 #include "ll/api/mod/RegisterHelper.h"
 #include "Global.h"
+#include "mc/network/packet/TextPacket.h"
 
 namespace LiteNPC {
 void registerEvents();
@@ -28,16 +29,16 @@ bool LiteNPCMod::enable() {
     registerCommands();
     NPC::init();
     auto npc = NPC::create("motion", Vec3(152, -3, 770), 0, Vec2(0, 90), "motion");
-    npc->setCallback([npc](Player * player) {
-        npc->emote("Wave");
-        player->sendMessage("Hi!");
+    npc->setCallback([npc](Player* player) {
+        //npc->emote("Wave");
+        //npc->lookAt(player->getPosition());
+        //npc->moveTo(player->getFeetPos());
+        //npc->swing();
+
     });
     Util::setInterval([npc] {
-        npc->moveTo(Vec3(152, -3, 770));
-        Util::setTimeout([npc] {
-            npc->moveTo(Vec3(140, -3, 770));
-        }, 5000);
-    }, 10000);
+        npc->interactBlock(BlockPos(153, -3, 770));
+    }, 1000);
     return true;
 }
 

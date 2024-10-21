@@ -30,6 +30,11 @@ namespace LiteNPC {
         }
     }
 
+    AUTO_TI_HOOK(PlayerChangeDimension, Level, requestPlayerChangeDimension, void, Player& player,
+                 ChangeDimensionRequest&& changeRequest) {
+        Util::setTimeout([&player]() { NPC::spawnAll(&player); });
+    }
+
     LL_TYPE_INSTANCE_HOOK(OnUseNPCHook, HookPriority::Normal, ItemUseOnActorInventoryTransaction,
                           "?handle@ItemUseOnActorInventoryTransaction@@UEBA?AW4InventoryTransactionError@@AEAVPlayer@@_N@Z",
                           InventoryTransactionError, class Player& player, bool isSenderAuthority) {
@@ -43,5 +48,6 @@ namespace LiteNPC {
         EVENT_REGISTER(PlayerJoinEvent);
         SendEmotionHook::hook();
         OnUseNPCHook::hook();
+        PlayerChangeDimensionHook::hook();
     }
 } // namespace OreShop

@@ -1,12 +1,18 @@
 #include "NPC.h"
 
+#include <mc/network/packet/TextPacket.h>
+
 #include "mc/network/packet/AddPlayerPacket.h"
 #include "mc/network/packet/PlayerSkinPacket.h"
 #include "mc/network/packet/RemoveActorPacket.h"
 #include "mc/network/packet/SetActorDataPacket.h"
-#include "mc/network/packet/MovePlayerPacket.h"
+#include "mc/network/packet/MovePlayerPacket.h""
+#include "mc/network/packet/AnimatePacket.h"
 #include "mc/network/packet/EmotePacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
+#include "mc/world/level/dimension/Dimension.h"
+#include "mc/world/level/BlockSource.h"
+#include "mc/world/level/block/Block.h"
 
 #include "ll/api/utils/RandomUtils.h"
 
@@ -21,7 +27,7 @@ namespace LiteNPC {
     }
 
     void NPC::spawn(Player *pl) {
-        if (pl->getDimensionId().id != dim) return;
+        if (pl->getDimensionId() != dim) return;
 
         AddPlayerPacket pkt;
         pkt.mName = name;
@@ -31,7 +37,7 @@ namespace LiteNPC {
         pkt.mPos = pos;
         pkt.mRot = rot;
         pkt.mYHeadRot = rot.y;
-        pkt.mUnpack.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar)1));
+        pkt.mUnpack.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
         pl->sendNetworkPacket(pkt);
 
         Util::setTimeout([this, pl]() { this->updateSkin(pl); });
@@ -47,33 +53,73 @@ namespace LiteNPC {
         pl->sendNetworkPacket(pkt);
     }
 
+    void NPC::updatePosition() {
+        MovePlayerPacket pkt;
+        pkt.mPlayerID = runtimeId;
+        pkt.mPos = pos + Vec3(.0f, 1.62f, .0f);
+        pkt.mRot = rot;
+        pkt.mYHeadRot = rot.y;
+        pkt.mOnGround = true;
+        pkt.sendTo(BlockPos(pos), dim);
+    }
+
     void NPC::emote(string emoteName) {
         if (!emotionsConfig.emotions.contains(emoteName)) return;
         EmotePacket pkt;
         pkt.mRuntimeId = runtimeId;
         pkt.mPieceId = emotionsConfig.emotions.at(emoteName);
         pkt.mFlags = 0x2;
-        pkt.sendToClients();
+        pkt.sendTo(BlockPos(pos), dim);
     }
 
     void NPC::moveTo(Vec3 dest, float speed) {
-        dest += Vec3(.5f, .0f, .5f);
+        Util::clearTask(moving_task);
         Vec3 offset = dest - pos;
         int steps = std::ceil(offset.length() / (.21585f * speed));
         if (steps == 0) return;
         Vec3 step = offset / steps;
-        Vec2 look = Vec3::rotationFromDirection(offset);
-        LOGGER.info("off {} step {} steps {}", offset.toString(), step.toString(), steps);
-        Util::setInterval([this, step, look] {
+        rot = Vec3::rotationFromDirection(offset);
+        // LOGGER.info("off {} step {} steps {}", offset.toString(), step.toString(), steps);
+        moving_task = Util::setInterval([this, step] {
             pos += step;
-            MovePlayerPacket pkt;
-            pkt.mPlayerID = runtimeId;
-            pkt.mPos = pos + Vec3(.0f, 1.62f,  .0f);
-            pkt.mRot = look;
-            pkt.mYHeadRot = look.y;
-            pkt.mOnGround = true;
-            pkt.sendToClients();
+            updatePosition();
         }, 0, steps);
+    }
+
+    void NPC::moveTo(BlockPos pos, float speed) { moveTo(pos.bottomCenter(), speed); }
+
+    void NPC::lookAt(Vec3 pos) {
+        Util::clearTask(rotation_task);
+        Vec2 dest = Vec3::rotationFromDirection(pos - this->pos - Vec3(.0f, 1.62f, .0f));
+        Vec2 offset = dest - rot;
+        if (offset.y > 180) offset.y -= 360;
+        else if (offset.y < -180) offset.y += 360;
+        int steps = std::ceil(offset.length() / 20);
+        if (steps == 0) return;
+        Vec2 step = offset / steps;
+        // LOGGER.info("off {} step {} steps {}", offset.toString(), step.toString(), steps);
+        rotation_task = Util::setInterval([this, step] {
+            rot += step;
+            updatePosition();
+        }, 0, steps);
+    }
+
+    void NPC::swing() {
+        AnimatePacket pkt;
+        pkt.mRuntimeId = runtimeId;
+        pkt.mAction = AnimatePacket::Action::Swing;
+        pkt.sendTo(BlockPos(pos), dim);
+    }
+
+    void NPC::interactBlock(BlockPos bp) {
+        auto dim = LEVEL->getDimension(this->dim).get();
+        if (!dim) return;
+        auto& bs = dim->getBlockSourceFromMainChunkSource();
+        if (auto bl = &const_cast<Block&>(bs.getBlock(bp))) {
+            bl->onHitByActivatingAttack(bs, bp, nullptr);
+            lookAt(bp.center());
+            swing();
+        }
     }
 
     void NPC::onUse(Player *pl) {
@@ -85,9 +131,9 @@ namespace LiteNPC {
     }
 
     NPC *NPC::create(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player *pl)> callback) {
-        NPC *npc = new NPC(name, pos, dim, rot, skin, callback);
+        NPC *npc = new NPC(name, pos + Vec3(0.5f, 0.0f, 0.5f), dim, rot, skin, callback);
         loadedNPC[npc->runtimeId] = npc;
-        for (auto pl : Util::getAllPlayers()) npc->spawn(pl);
+        for (auto pl: Util::getAllPlayers()) npc->spawn(pl);
         return npc;
     }
 
@@ -108,7 +154,7 @@ namespace LiteNPC {
 
     void NPC::setSkin(string skin) {
         this->skinName = skin;
-        for (auto pl : Util::getAllPlayers()) updateSkin(pl);
+        for (auto pl: Util::getAllPlayers()) updateSkin(pl);
     }
 
     NPC *NPC::getByRId(unsigned long long rId) {
