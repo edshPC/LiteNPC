@@ -26,6 +26,10 @@ namespace LiteNPC {
         pkt.sendToClients();
     }
 
+    void NPC::tick() {
+
+    }
+
     void NPC::spawn(Player *pl) {
         if (pl->getDimensionId() != dim) return;
 
@@ -185,6 +189,9 @@ namespace LiteNPC {
     }
 
     void NPC::init() {
+        Util::setInterval([] {
+            for (auto en : loadedNPC) en.second->tick();
+        });
         DB.iter([](string_view k, string_view v) -> bool {
             string name(k), data(v);
             loadedSkins[name] = SerializedSkin::createTrustedDefaultSerializedSkin();

@@ -7,7 +7,6 @@
 #include "mc/math/Vec2.h"
 #include "mc/world/actor/player/SerializedSkin.h"
 #include "mc/world/ActorRuntimeID.h"
-#include "mc/network/ConnectionRequest.h"
 
 using namespace std;
 
@@ -30,6 +29,7 @@ namespace LiteNPC {
 		void updateSkin(Player* = nullptr);
 		void updatePosition();
 		void remove();
+		void tick();
 		void setCallback(function<void(Player*)>);
 
 		void setName(string);
@@ -58,7 +58,6 @@ namespace LiteNPC {
 		const ActorRuntimeID runtimeId;
 		const mce::UUID uuid;
 		function<void(Player* pl)> callback;
-		Player* fakePlayer;
 
 		int moving_task, rotation_task;
 	};
