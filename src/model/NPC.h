@@ -43,6 +43,8 @@ namespace LiteNPC {
 		void lookAt(Vec3 pos);
 		void swing();
 		void interactBlock(BlockPos bp);
+		void say(const string &text);
+		void delay(uint64 ticks);
 
 		static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = {});
 		static void spawnAll(Player* pl);

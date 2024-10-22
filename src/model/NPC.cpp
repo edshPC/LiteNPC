@@ -10,6 +10,7 @@
 #include "mc/network/packet/MovePlayerPacket.h""
 #include "mc/network/packet/AnimatePacket.h"
 #include "mc/network/packet/EmotePacket.h"
+#include "mc/network/packet/TextPacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
 #include "mc/world/level/dimension/Dimension.h"
 #include "mc/world/level/BlockSource.h"
@@ -124,7 +125,7 @@ namespace LiteNPC {
         auto pkt = make_unique<AnimatePacket>();
         pkt->mRuntimeId = runtimeId;
         pkt->mAction = AnimatePacket::Action::Swing;
-        newAction(move(pkt), 10);
+        newAction(move(pkt), 20);
     }
 
     void NPC::interactBlock(BlockPos bp) {
@@ -138,6 +139,17 @@ namespace LiteNPC {
             }
         });
         swing();
+    }
+
+    void NPC::say(const string &text) {
+        auto pkt = make_unique<TextPacket>();
+        pkt->mType = TextPacketType::Raw;
+        pkt->mMessage = text;
+        newAction(move(pkt));
+    }
+
+    void NPC::delay(uint64 ticks) {
+        if (ticks) newAction(nullptr, ticks);
     }
 
     void NPC::onUse(Player *pl) {

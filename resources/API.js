@@ -2,12 +2,17 @@ const NAMESPACE = "LiteNPC";
 
 let plugin = "default", serverStarted = false, queue = [];
 
-const API = {}, API_funcs = ["create", "clear", "setCallback", "emote", "moveTo", "moveToBlock", "lookAt", "swing", "interactBlock"];
+const API = {}, API_funcs = ["create", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
+    "lookAt", "swing", "interactBlock", "say", "delay"];
 API_funcs.forEach(f => API[f] = ll.imports(NAMESPACE, f));
 
 export default class LiteNPC {
 	id = 0;
-	constructor(args) { this.args = args; }
+	cbId = 0;
+	constructor(args) {
+        this.name = args[0];
+        this.args = args;
+    }
 
 	load() {
 		let [name, pos, rot, skin, callback] = this.args;
@@ -16,9 +21,12 @@ export default class LiteNPC {
 	}
 
 	setCallback(callback) {
-		let func_name = `NPC_${this.id}`;
-		ll.exports(callback, NAMESPACE, func_name);
-		API.setCallback(this.id);
+		ll.exports(callback, NAMESPACE, `NPC_${this.id}_${this.cbId}`);
+		API.setCallback(this.id, this.cbId++);
+	}
+
+	waitCallback(callback) {
+		return new Promise(resolve => this.setCallback(pl => { if (callback) callback(pl); resolve(); }));
 	}
 
 	moveTo(pos, speed = 1) {
@@ -30,6 +38,16 @@ export default class LiteNPC {
 	lookAt(pos) { API.lookAt(this.id, pos);	}
 	swing() { API.swing(this.id); }
 	interactBlock(pos) { API.interactBlock(this.id, pos); }
+
+	say(msg, instant) {
+        msg = `§6[§f${this.name}§6] §f${msg}`;
+        if (instant) mc.broadcast(msg);
+        else API.say(this.id, msg);
+    }
+
+    delay(ticks) {
+        API.delay(this.id, ticks);
+    }
 
 	static create(...args) {
 		let npc = new LiteNPC(args);
