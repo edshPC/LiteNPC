@@ -16,10 +16,10 @@ using namespace ll::event;
 
 namespace LiteNPC {
     EVENT_FUNCTION(PlayerJoinEvent) {
-        LiteNPC::NPC::spawnAll(&ev.self());
+        NPC::spawnAll(&ev.self());
     }
 
-    unordered_map<Player *, string> waitingEmotions;
+    unordered_map<Player*, string> waitingEmotions;
     AUTO_TI_HOOK(SendEmotion, ServerNetworkHandler, handle, void, NetworkIdentifier const& source,
                  EmotePacket const& packet) {
         auto sp = getServerPlayer(source, packet.mClientSubId);
@@ -30,9 +30,8 @@ namespace LiteNPC {
         }
     }
 
-    AUTO_TI_HOOK(PlayerChangeDimension, Level, requestPlayerChangeDimension, void, Player& player,
-                 ChangeDimensionRequest&& changeRequest) {
-        Util::setTimeout([&player]() { NPC::spawnAll(&player); });
+    AUTO_TI_HOOK(PlayerChangeDimension, Level, requestPlayerChangeDimension, void, Player& pl, ChangeDimensionRequest&&) {
+        Util::setTimeout([&pl] { NPC::spawnAll(&pl); });
     }
 
     LL_TYPE_INSTANCE_HOOK(OnUseNPCHook, HookPriority::Normal, ItemUseOnActorInventoryTransaction,
@@ -43,11 +42,17 @@ namespace LiteNPC {
         return origin(player, isSenderAuthority);
     }
 
+    AUTO_TI_HOOK(Tick, Level, tick, void) {
+        origin();
+        NPC::tickAll(getCurrentTick().t);
+    }
+
     void registerEvents() {
         auto &bus = EventBus::getInstance();
         EVENT_REGISTER(PlayerJoinEvent);
         SendEmotionHook::hook();
         OnUseNPCHook::hook();
         PlayerChangeDimensionHook::hook();
+        TickHook::hook();
     }
 } // namespace OreShop

@@ -1,5 +1,6 @@
 #include "NPC.h"
 
+#include <ll/api/chrono/GameChrono.h>
 #include <mc/network/packet/TextPacket.h>
 
 #include "mc/network/packet/AddPlayerPacket.h"
@@ -17,17 +18,29 @@
 #include "ll/api/utils/RandomUtils.h"
 
 namespace LiteNPC {
-    unordered_map<unsigned long long, NPC *> loadedNPC;
+    unordered_map<uint64, NPC*> loadedNPC;
     unordered_map<string, SerializedSkin> loadedSkins;
+    const Vec3 eyeHeight = {.0f, 1.62f, .0f};
 
     void NPC::remove() {
         loadedNPC.erase(runtimeId);
         RemoveActorPacket pkt{actorId};
         pkt.sendToClients();
+        delete this;
     }
 
-    void NPC::tick() {
+    void NPC::newAction(unique_ptr<Packet> pkt, uint64 delay, function<void()> cb) {
+        uint64 tick = std::max(LEVEL->getCurrentTick().t + 1, freeTick);
+        freeTick = tick + delay;
+        actions[tick] = { move(pkt), cb };
+    }
 
+    void NPC::tick(uint64 tick) {
+        if (auto it = actions.begin(); it != actions.end() && tick >= it->first) {
+            if(it->second.pkt) it->second.pkt->sendToClients();
+            if(it->second.cb) it->second.cb();
+            actions.erase(it);
+        }
     }
 
     void NPC::spawn(Player *pl) {
@@ -58,43 +71,42 @@ namespace LiteNPC {
     }
 
     void NPC::updatePosition() {
-        MovePlayerPacket pkt;
-        pkt.mPlayerID = runtimeId;
-        pkt.mPos = pos + Vec3(.0f, 1.62f, .0f);
-        pkt.mRot = rot;
-        pkt.mYHeadRot = rot.y;
-        pkt.mOnGround = true;
-        pkt.sendTo(BlockPos(pos), dim);
+        auto pkt = make_unique<MovePlayerPacket>();
+        pkt->mPlayerID = runtimeId;
+        pkt->mPos = pos + eyeHeight;
+        pkt->mRot = rot;
+        pkt->mYHeadRot = rot.y;
+        pkt->mOnGround = true;
+        newAction(move(pkt));
     }
 
     void NPC::emote(string emoteName) {
         if (!emotionsConfig.emotions.contains(emoteName)) return;
-        EmotePacket pkt;
-        pkt.mRuntimeId = runtimeId;
-        pkt.mPieceId = emotionsConfig.emotions.at(emoteName);
-        pkt.mFlags = 0x2;
-        pkt.sendTo(BlockPos(pos), dim);
+        auto pkt = make_unique<EmotePacket>();
+        pkt->mRuntimeId = runtimeId;
+        pkt->mPieceId = emotionsConfig.emotions.at(emoteName);
+        pkt->mFlags = 0x2;
+        newAction(move(pkt), 50);
     }
 
     void NPC::moveTo(Vec3 dest, float speed) {
-        Util::clearTask(moving_task);
         Vec3 offset = dest - pos;
         int steps = std::ceil(offset.length() / (.21585f * speed));
         if (steps == 0) return;
         Vec3 step = offset / steps;
-        rot = Vec3::rotationFromDirection(offset);
+        lookAt(dest + eyeHeight);
         // LOGGER.info("off {} step {} steps {}", offset.toString(), step.toString(), steps);
-        moving_task = Util::setInterval([this, step] {
+        for (int i = 0; i < steps; i++) {
             pos += step;
             updatePosition();
-        }, 0, steps);
+        }
+        freeTick += 5;
     }
 
     void NPC::moveTo(BlockPos pos, float speed) { moveTo(pos.bottomCenter(), speed); }
 
     void NPC::lookAt(Vec3 pos) {
-        Util::clearTask(rotation_task);
-        Vec2 dest = Vec3::rotationFromDirection(pos - this->pos - Vec3(.0f, 1.62f, .0f));
+        Vec2 dest = Vec3::rotationFromDirection(pos - this->pos - eyeHeight);
         Vec2 offset = dest - rot;
         if (offset.y > 180) offset.y -= 360;
         else if (offset.y < -180) offset.y += 360;
@@ -102,32 +114,34 @@ namespace LiteNPC {
         if (steps == 0) return;
         Vec2 step = offset / steps;
         // LOGGER.info("off {} step {} steps {}", offset.toString(), step.toString(), steps);
-        rotation_task = Util::setInterval([this, step] {
+        for (int i = 0; i < steps; i++) {
             rot += step;
             updatePosition();
-        }, 0, steps);
-    }
-
-    void NPC::swing() {
-        AnimatePacket pkt;
-        pkt.mRuntimeId = runtimeId;
-        pkt.mAction = AnimatePacket::Action::Swing;
-        pkt.sendTo(BlockPos(pos), dim);
-    }
-
-    void NPC::interactBlock(BlockPos bp) {
-        auto dim = LEVEL->getDimension(this->dim).get();
-        if (!dim) return;
-        auto& bs = dim->getBlockSourceFromMainChunkSource();
-        if (auto bl = &const_cast<Block&>(bs.getBlock(bp))) {
-            bl->onHitByActivatingAttack(bs, bp, nullptr);
-            lookAt(bp.center());
-            swing();
         }
     }
 
+    void NPC::swing() {
+        auto pkt = make_unique<AnimatePacket>();
+        pkt->mRuntimeId = runtimeId;
+        pkt->mAction = AnimatePacket::Action::Swing;
+        newAction(move(pkt), 10);
+    }
+
+    void NPC::interactBlock(BlockPos bp) {
+        lookAt(bp.center());
+        newAction(nullptr, 1, [this, bp] {
+            auto dim = LEVEL->getDimension(this->dim).get();
+            if (!dim) return;
+            auto& bs = dim->getBlockSourceFromMainChunkSource();
+            if (auto bl = &const_cast<Block&>(bs.getBlock(bp))) {
+                bl->onHitByActivatingAttack(bs, bp, nullptr);
+            }
+        });
+        swing();
+    }
+
     void NPC::onUse(Player *pl) {
-        callback(pl);
+        if (callback) callback(pl);
     }
 
     void NPC::setCallback(function<void(Player *pl)> callback) {
@@ -142,9 +156,11 @@ namespace LiteNPC {
     }
 
     void NPC::spawnAll(Player *pl) {
-        for (auto entry: loadedNPC) {
-            entry.second->spawn(pl);
-        }
+        for (auto [id, npc]: loadedNPC) npc->spawn(pl);
+    }
+
+    void NPC::tickAll(uint64 tick) {
+        for (auto [id, npc]: loadedNPC) npc->tick(tick);
     }
 
     void NPC::setName(string name) {
@@ -161,7 +177,7 @@ namespace LiteNPC {
         for (auto pl: Util::getAllPlayers()) updateSkin(pl);
     }
 
-    NPC *NPC::getByRId(unsigned long long rId) {
+    NPC *NPC::getByRId(uint64 rId) {
         if (loadedNPC.contains(rId)) return loadedNPC.at(rId);
         return nullptr;
     }
@@ -170,9 +186,9 @@ namespace LiteNPC {
         loadedSkins[name] = skin;
         auto &newSkin = loadedSkins.at(name);
 
-        newSkin.mId = "Custom" + mce::UUID().asString();
-        newSkin.mFullId = newSkin.mId + mce::UUID().asString();
-        newSkin.mCapeId = mce::UUID().asString();
+        newSkin.mId = "Custom" + mce::UUID::random().asString();
+        newSkin.mFullId = newSkin.mId + mce::UUID::random().asString();
+        newSkin.mCapeId = mce::UUID::random().asString();
         std::stringstream stream;
         stream << std::hex << ll::random_utils::rand<uint64>();
         newSkin.mPlayFabId = stream.str();
@@ -189,9 +205,6 @@ namespace LiteNPC {
     }
 
     void NPC::init() {
-        Util::setInterval([] {
-            for (auto en : loadedNPC) en.second->tick();
-        });
         DB.iter([](string_view k, string_view v) -> bool {
             string name(k), data(v);
             loadedSkins[name] = SerializedSkin::createTrustedDefaultSerializedSkin();
@@ -201,4 +214,5 @@ namespace LiteNPC {
             return true;
         });
     }
+
 }

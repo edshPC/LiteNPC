@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mc/network/ServerNetworkHandler.h>
+#include <mc/network/packet/Packet.h>
 
 #include "Global.h"
 #include "mc/math/Vec3.h"
@@ -11,7 +12,10 @@
 using namespace std;
 
 namespace LiteNPC {
-
+	struct Action {
+		unique_ptr<Packet> pkt;
+		function<void()> cb;
+	};
 	class NPC {
 	public:
 		NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> cb) :
@@ -20,8 +24,6 @@ namespace LiteNPC {
 			dim(dim),
 			rot(rot),
 			skinName(skin),
-			actorId(LEVEL->getNewUniqueID()),
-			runtimeId(LEVEL->getNextRuntimeID()),
 			callback(cb) {}
 
 		void onUse(Player*);
@@ -29,7 +31,8 @@ namespace LiteNPC {
 		void updateSkin(Player* = nullptr);
 		void updatePosition();
 		void remove();
-		void tick();
+		void newAction(unique_ptr<Packet> pkt, uint64 delay = 1, function<void()> cb = {});
+		void tick(uint64 tick);
 		void setCallback(function<void(Player*)>);
 
 		void setName(string);
@@ -47,6 +50,9 @@ namespace LiteNPC {
 		static void saveSkin(string name, SerializedSkin&);
 		static void saveEmotion(string name, string emotionUuid);
 		static void init();
+		static void tickAll(uint64 tick);
+
+		uint64 getRId() { return runtimeId; }
 
 	private:
 		string name;
@@ -54,12 +60,12 @@ namespace LiteNPC {
 		Vec2 rot;
 		int dim;
 		string skinName;
-		const ActorUniqueID actorId;
-		const ActorRuntimeID runtimeId;
-		const mce::UUID uuid;
+		const ActorUniqueID actorId = LEVEL->getNewUniqueID();
+		const ActorRuntimeID runtimeId = LEVEL->getNextRuntimeID();
+		const mce::UUID uuid = mce::UUID::random();
 		function<void(Player* pl)> callback;
-
-		int moving_task, rotation_task;
+		std::map<uint64, Action> actions;
+		uint64 freeTick = 0;
 	};
 
 }
