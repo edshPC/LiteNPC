@@ -47,6 +47,7 @@ namespace LiteNPC {
 		void interactBlock(BlockPos bp);
 		void say(const string &text);
 		void delay(uint64 ticks);
+		void sit();
 
 		static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = {});
 		static void spawnAll(Player* pl);
@@ -71,6 +72,11 @@ namespace LiteNPC {
 		std::map<uint64, Action> actions;
 		uint64 freeTick = 0;
 		ItemStack hand = ItemStack::EMPTY_ITEM;
+		bool isSitting = false;
+		struct Minecart {
+			ActorUniqueID actorId = LEVEL->getNewUniqueID();
+			ActorRuntimeID runtimeId = LEVEL->getNextRuntimeID();
+		} minecart;
 	};
 
 }

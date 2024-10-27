@@ -30,17 +30,6 @@ bool LiteNPCMod::load() {
 bool LiteNPCMod::enable() {
     registerCommands();
     NPC::init();
-    // auto npc = NPC::create("motion", Vec3(152, -3, 770), 0, Vec2(0, 90), "motion");
-    // npc->setCallback([npc](Player* player) {
-    //     npc->emote("Wave");
-    //     npc->lookAt(player->getPosition());
-    //     npc->moveTo(BlockPos(152, -3, 770));
-    //     npc->interactBlock(BlockPos(153, -3, 770));
-    //     npc->moveTo(BlockPos(140, -3, 760));
-    // });
-    // Util::setInterval([npc] {
-    //     npc->interactBlock(BlockPos(153, -3, 770));
-    // }, 1000);
     return true;
 }
 

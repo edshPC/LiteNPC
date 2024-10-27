@@ -4,10 +4,12 @@
 #include "ll/api/event/player/PlayerJoinEvent.h"
 #include "ll/api/memory/Hook.h"
 #include <mc/network/packet/EmotePacket.h>
+
 #include "mc/network/ServerNetworkHandler.h"
 #include "mc/world/inventory/transaction/ItemUseOnActorInventoryTransaction.h"
 #include "mc/network/packet/EmoteListPacket.h"
 #include "mc/network/PacketObserver.h"
+#include "mc/network/packet/SetActorLinkPacket.h"
 
 using namespace ll::event;
 
@@ -63,6 +65,12 @@ namespace LiteNPC {
         if (pkt.getName() != lastPkt) {
             LOGGER.info(pkt.getName());
             lastPkt = pkt.getName();
+            if (lastPkt == "SetActorLinkPacket") {
+                auto lpkt = static_cast<SetActorLinkPacket const*>(&pkt);
+                LOGGER.info("type {}\na {}\nb {}\nim {}\npas {}",
+                    (int)lpkt->mLink.mType, LEVEL->fetchEntity(lpkt->mLink.mA)->getTypeName(), LEVEL->fetchEntity(lpkt->mLink.mB)->getTypeName(),
+                    lpkt->mLink.mImmediate, lpkt->mLink.mPassengerInitiated);
+            }
         }
     }
 
@@ -73,6 +81,6 @@ namespace LiteNPC {
         OnUseNPCHook::hook();
         PlayerChangeDimensionHook::hook();
         TickHook::hook();
-        TmpHook::hook();
+        //6TmpHook::hook();
     }
 } // namespace OreShop

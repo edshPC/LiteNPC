@@ -3,7 +3,7 @@ const NAMESPACE = "LiteNPC";
 let plugin = "default", serverStarted = false, queue = [];
 
 const API = {}, API_funcs = ["create", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
-    "lookAt", "swing", "interactBlock", "say", "delay", "setHand"];
+    "lookAt", "swing", "interactBlock", "say", "delay", "setHand", "sit"];
 API_funcs.forEach(f => API[f] = ll.imports(NAMESPACE, f));
 
 function parsePositionArgs(args, Type = IntPos) {
@@ -47,6 +47,7 @@ export default class LiteNPC {
 	swing() { API.swing(this.id); }
 	interactBlock(...args) { API.interactBlock(this.id, parsePositionArgs(args)); }
 	setHand(item) { API.setHand(this.id, item); }
+	sit() { API.sit(this.id); }
 
 	say(msg, instant) {
         msg = `§6[§f${this.name}§6] §f${msg}`;

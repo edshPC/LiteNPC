@@ -55,6 +55,7 @@ namespace LiteNPC {
 		EXPORT_ONE_ARG(say, string const& text, text);
 		EXPORT_ONE_ARG(delay, int64 delay, delay);
 		EXPORT_ONE_ARG(setHand, ItemType const& item, *item.ptr);
+		EXPORT_NO_ARGS(sit);
 
 	}
 

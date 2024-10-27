@@ -1,7 +1,6 @@
 #include "NPC.h"
 
 #include <ll/api/chrono/GameChrono.h>
-#include <mc/network/packet/TextPacket.h>
 
 #include "mc/network/packet/AddPlayerPacket.h"
 #include "mc/network/packet/PlayerSkinPacket.h"
@@ -10,10 +9,13 @@
 #include "mc/network/packet/MovePlayerPacket.h""
 #include "mc/network/packet/AnimatePacket.h"
 #include "mc/network/packet/EmotePacket.h"
-#include "mc/network/packet/ActorEventPacket.h"
+#include "mc/network/packet/AddActorPacket.h"
+#include "mc/network/packet/SetActorLinkPacket.h"
 #include "mc/network/packet/MobEquipmentPacket.h"
+#include "mc/network/packet/TextPacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
 #include "mc/world/level/dimension/Dimension.h"
+#include "mc/world/level/Spawner.h"
 #include "mc/world/level/BlockSource.h"
 #include "mc/world/level/block/Block.h"
 
@@ -155,6 +157,29 @@ namespace LiteNPC {
 
     void NPC::delay(uint64 ticks) {
         if (ticks) newAction(nullptr, ticks);
+    }
+
+    void NPC::sit() {
+        isSitting = !isSitting;
+        if (isSitting) {
+            auto pkt = make_unique<AddPlayerPacket>();
+            pkt->mUuid = mce::UUID::random();
+            pkt->mEntityId = minecart.actorId;
+            pkt->mRuntimeId = minecart.runtimeId;
+            pkt->mPos = pos - Vec3(0, .5f, 0);
+            pkt->mRot = rot;
+            pkt->mUnpack.emplace_back(DataItem::create(ActorDataIDs::Reserved038, .0001f));
+            ActorLink link;
+            link.mType = ActorLinkType::Passenger;
+            link.mA = minecart.actorId;
+            link.mB = actorId;
+            pkt->mLinks.emplace_back(link);
+            newAction(move(pkt));
+        } else {
+            auto pkt = make_unique<RemoveActorPacket>(minecart.actorId);
+            newAction(move(pkt));
+            updatePosition();
+        }
     }
 
     void NPC::onUse(Player *pl) {
