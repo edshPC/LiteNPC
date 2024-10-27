@@ -37,9 +37,11 @@ namespace LiteNPC {
 
 		void setName(string);
 		void setSkin(string);
+		void setHand(const ItemStack &item);
 		void emote(string emoteName);
 		void moveTo(Vec3 pos, float speed = 1);
 		void moveTo(BlockPos pos, float speed = 1);
+		void moveToBlock(BlockPos pos, float speed = 1) { moveTo(pos, speed); }
 		void lookAt(Vec3 pos);
 		void swing();
 		void interactBlock(BlockPos bp);
@@ -68,6 +70,7 @@ namespace LiteNPC {
 		function<void(Player* pl)> callback;
 		std::map<uint64, Action> actions;
 		uint64 freeTick = 0;
+		ItemStack hand = ItemStack::EMPTY_ITEM;
 	};
 
 }

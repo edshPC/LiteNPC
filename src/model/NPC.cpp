@@ -10,7 +10,8 @@
 #include "mc/network/packet/MovePlayerPacket.h""
 #include "mc/network/packet/AnimatePacket.h"
 #include "mc/network/packet/EmotePacket.h"
-#include "mc/network/packet/TextPacket.h"
+#include "mc/network/packet/ActorEventPacket.h"
+#include "mc/network/packet/MobEquipmentPacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
 #include "mc/world/level/dimension/Dimension.h"
 #include "mc/world/level/BlockSource.h"
@@ -56,9 +57,13 @@ namespace LiteNPC {
         pkt.mRot = rot;
         pkt.mYHeadRot = rot.y;
         pkt.mUnpack.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
+        BinaryStream bs;
+        NetworkItemStackDescriptor(hand).write(bs);
+        pkt.mCarriedItem.read(bs);
         pl->sendNetworkPacket(pkt);
 
-        Util::setTimeout([this, pl]() { this->updateSkin(pl); });
+        Util::setTimeout([this, pl]() { updateSkin(pl); });
+        //Util::setInterval([this] {setHand(ItemStack("minecraft:stone"));}, 1000);
     }
 
     void NPC::updateSkin(Player *pl) {
@@ -187,6 +192,12 @@ namespace LiteNPC {
     void NPC::setSkin(string skin) {
         this->skinName = skin;
         for (auto pl: Util::getAllPlayers()) updateSkin(pl);
+    }
+
+    void NPC::setHand(const ItemStack &item) {
+        hand = item.clone();
+        auto pkt = make_unique<MobEquipmentPacket>(runtimeId, hand, 0, 0, ContainerID::Inventory);
+        newAction(move(pkt));
     }
 
     NPC *NPC::getByRId(uint64 rId) {

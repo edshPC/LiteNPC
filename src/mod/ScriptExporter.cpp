@@ -6,6 +6,16 @@ const string NAMESPACE = "LiteNPC";
 
 using namespace RemoteCall;
 
+#define EXPORT_NO_ARGS(method) exportAs(NAMESPACE, #method, [](int64 rId) { \
+	if (auto npc = NPC::getByRId(rId)) npc->method(); })
+
+#define EXPORT_ONE_ARG(method, arg, unwrap) exportAs(NAMESPACE, #method, [](int64 rId, arg) { \
+	if (auto npc = NPC::getByRId(rId)) npc->method(unwrap); })
+
+#define EXPORT_TWO_ARGS(method, arg1, unwrap1, arg2, unwrap2) \
+	exportAs(NAMESPACE, #method, [](int64 rId, arg1, arg2) { \
+	if (auto npc = NPC::getByRId(rId)) npc->method(unwrap1, unwrap2); })
+
 namespace LiteNPC {
 	unordered_map<string, unordered_set<NPC*>> externalNPC;
 
@@ -36,51 +46,15 @@ namespace LiteNPC {
 			if (cbId) removeFunc(NAMESPACE, std::format("NPC_{}_{}", rId, cbId - 1));
 		});
 
-		exportAs(NAMESPACE, "emote", [](int64 rId, std::string const& name) {
-			NPC* npc = NPC::getByRId(rId);
-			if (npc) npc->emote(name);
-		});
-
-		exportAs(NAMESPACE, "moveTo", [](
-		int64 rId,
-		WorldPosType const& pos,
-		float speed) {
-			NPC* npc = NPC::getByRId(rId);
-			if (npc) npc->moveTo(pos.pos, speed);
-		});
-
-		exportAs(NAMESPACE, "moveToBlock", [](
-		int64 rId,
-		BlockPosType const& pos,
-		float speed) {
-			NPC* npc = NPC::getByRId(rId);
-			if (npc) npc->moveTo(pos.pos, speed);
-		});
-
-		exportAs(NAMESPACE, "lookAt", [](int64 rId, WorldPosType const& pos) {
-			NPC* npc = NPC::getByRId(rId);
-			if (npc) npc->lookAt(pos.pos);
-		});
-
-		exportAs(NAMESPACE, "swing", [](int64 rId) {
-			NPC* npc = NPC::getByRId(rId);
-			if (npc) npc->swing();
-		});
-
-		exportAs(NAMESPACE, "interactBlock", [](int64 rId, BlockPosType const& pos) {
-			NPC* npc = NPC::getByRId(rId);
-			if (npc) npc->interactBlock(pos.pos);
-		});
-
-		exportAs(NAMESPACE, "say", [](int64 rId, string const& text) {
-			NPC* npc = NPC::getByRId(rId);
-			if (npc) npc->say(text);
-		});
-
-		exportAs(NAMESPACE, "delay", [](int64 rId, int64 delay) {
-			NPC* npc = NPC::getByRId(rId);
-			if (npc) npc->delay(delay);
-		});
+		EXPORT_ONE_ARG(emote, string const& name, name);
+		EXPORT_TWO_ARGS(moveTo, WorldPosType const& pos, pos.pos, float speed, speed);
+		EXPORT_TWO_ARGS(moveToBlock, BlockPosType const& pos, pos.pos, float speed, speed);
+		EXPORT_ONE_ARG(lookAt, WorldPosType const& pos, pos.pos);
+		EXPORT_NO_ARGS(swing);
+		EXPORT_ONE_ARG(interactBlock, BlockPosType const& pos, pos.pos);
+		EXPORT_ONE_ARG(say, string const& text, text);
+		EXPORT_ONE_ARG(delay, int64 delay, delay);
+		EXPORT_ONE_ARG(setHand, ItemType const& item, *item.ptr);
 
 	}
 

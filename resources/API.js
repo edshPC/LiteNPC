@@ -3,8 +3,15 @@ const NAMESPACE = "LiteNPC";
 let plugin = "default", serverStarted = false, queue = [];
 
 const API = {}, API_funcs = ["create", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
-    "lookAt", "swing", "interactBlock", "say", "delay"];
+    "lookAt", "swing", "interactBlock", "say", "delay", "setHand"];
 API_funcs.forEach(f => API[f] = ll.imports(NAMESPACE, f));
+
+function parsePositionArgs(args, Type = IntPos) {
+	if (!(args[0] instanceof IntPos && args[0] instanceof FloatPos))
+	    args = [new Type(...args.slice(0, 3), 0), ...args.slice(3)];
+	if (args.length == 1) return args[0];
+	return args;
+}
 
 export default class LiteNPC {
 	id = 0;
@@ -29,15 +36,17 @@ export default class LiteNPC {
 		return new Promise(resolve => this.setCallback(pl => { if (callback) callback(pl); resolve(); }));
 	}
 
-	moveTo(pos, speed = 1) {
-		if (pos instanceof IntPos) API.moveToBlock(this.id, pos, speed);
-		else API.moveTo(this.id, pos, speed);
+	moveTo(...args) {
+		let [pos, speed] = parsePositionArgs(args);
+		if (pos instanceof IntPos) API.moveToBlock(this.id, pos, speed || 1);
+		else API.moveTo(this.id, pos, speed || 1);
 	}
 
 	emote(name) { API.emote(this.id, name);	}
-	lookAt(pos) { API.lookAt(this.id, pos);	}
+	lookAt(...args) { API.lookAt(this.id, parsePositionArgs(args, FloatPos)); }
 	swing() { API.swing(this.id); }
-	interactBlock(pos) { API.interactBlock(this.id, pos); }
+	interactBlock(...args) { API.interactBlock(this.id, parsePositionArgs(args)); }
+	setHand(item) { API.setHand(this.id, item); }
 
 	say(msg, instant) {
         msg = `§6[§f${this.name}§6] §f${msg}`;
