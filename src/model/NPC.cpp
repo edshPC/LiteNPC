@@ -65,6 +65,10 @@ namespace LiteNPC {
         pl->sendNetworkPacket(pkt);
 
         Util::setTimeout([this, pl]() { updateSkin(pl); });
+        if (isSitting) {
+            sit(false);
+            sit();
+        }
         //Util::setInterval([this] {setHand(ItemStack("minecraft:stone"));}, 1000);
     }
 
@@ -113,6 +117,8 @@ namespace LiteNPC {
 
     void NPC::moveTo(BlockPos pos, float speed) { moveTo(pos.bottomCenter(), speed); }
 
+    void NPC::moveToBlock(BlockPos pos, float speed) { moveTo(pos, speed); }
+
     void NPC::lookAt(Vec3 pos) {
         Vec2 dest = Vec3::rotationFromDirection(pos - this->pos - eyeHeight);
         Vec2 offset = dest - rot;
@@ -159,15 +165,14 @@ namespace LiteNPC {
         if (ticks) newAction(nullptr, ticks);
     }
 
-    void NPC::sit() {
-        isSitting = !isSitting;
-        if (isSitting) {
+    void NPC::sit(bool setSitting) {
+        if (setSitting && !isSitting) {
             auto pkt = make_unique<AddPlayerPacket>();
             pkt->mUuid = mce::UUID::random();
             pkt->mEntityId = minecart.actorId;
             pkt->mRuntimeId = minecart.runtimeId;
-            pkt->mPos = pos - Vec3(0, .5f, 0);
-            pkt->mRot = rot;
+            pos.y -= .5f;
+            pkt->mPos = pos;
             pkt->mUnpack.emplace_back(DataItem::create(ActorDataIDs::Reserved038, .0001f));
             ActorLink link;
             link.mType = ActorLinkType::Passenger;
@@ -175,15 +180,23 @@ namespace LiteNPC {
             link.mB = actorId;
             pkt->mLinks.emplace_back(link);
             newAction(move(pkt));
-        } else {
-            auto pkt = make_unique<RemoveActorPacket>(minecart.actorId);
-            newAction(move(pkt));
+            isSitting = true;
+        } else if (!setSitting && isSitting) {
+            pos.y += .5f;
+            ActorLink link;
+            link.mType = ActorLinkType::None;
+            link.mA = minecart.actorId;
+            link.mB = actorId;
+            newAction(make_unique<SetActorLinkPacket>(link));
+            newAction(make_unique<RemoveActorPacket>(minecart.actorId));
             updatePosition();
+            isSitting = false;
         }
     }
 
     void NPC::onUse(Player *pl) {
-        if (callback) callback(pl);
+        try { if (callback) callback(pl); }
+        catch (...) { LOGGER.error("{}: Cant fire callback", name); }
     }
 
     void NPC::setCallback(function<void(Player *pl)> callback) {

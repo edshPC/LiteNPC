@@ -41,13 +41,13 @@ namespace LiteNPC {
 		void emote(string emoteName);
 		void moveTo(Vec3 pos, float speed = 1);
 		void moveTo(BlockPos pos, float speed = 1);
-		void moveToBlock(BlockPos pos, float speed = 1) { moveTo(pos, speed); }
+		void moveToBlock(BlockPos pos, float speed = 1);
 		void lookAt(Vec3 pos);
 		void swing();
 		void interactBlock(BlockPos bp);
 		void say(const string &text);
 		void delay(uint64 ticks);
-		void sit();
+		void sit(bool setSitting = true);
 
 		static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = {});
 		static void spawnAll(Player* pl);

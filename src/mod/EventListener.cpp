@@ -4,6 +4,7 @@
 #include "ll/api/event/player/PlayerJoinEvent.h"
 #include "ll/api/memory/Hook.h"
 #include <mc/network/packet/EmotePacket.h>
+#include <mc/network/packet/PlayerSkinPacket.h>
 
 #include "mc/network/ServerNetworkHandler.h"
 #include "mc/world/inventory/transaction/ItemUseOnActorInventoryTransaction.h"
@@ -37,6 +38,17 @@ namespace LiteNPC {
             NPC::saveEmotion(waitingEmotions.at(sp), packet.mPieceId);
             waitingEmotions.erase(sp);
             sp->sendMessage("Emotion saved");
+        }
+    }
+
+    AUTO_TI_HOOK(ChangeSkin, ServerNetworkHandler, handle, void, NetworkIdentifier const& source,
+                 PlayerSkinPacket const& pkt) {
+        auto pl = getServerPlayer(source, pkt.mClientSubId);
+        if (pl) {
+            auto& skin = pkt.mSkin;
+            pl->updateSkin(skin, 1);
+            pkt.sendTo(*static_cast<Actor*>(pl));
+            pl->sendMessage("§eSkin changed");
         }
     }
 
@@ -78,9 +90,10 @@ namespace LiteNPC {
         auto &bus = EventBus::getInstance();
         EVENT_REGISTER(PlayerJoinEvent);
         SendEmotionHook::hook();
+        ChangeSkinHook::hook();
         OnUseNPCHook::hook();
         PlayerChangeDimensionHook::hook();
         TickHook::hook();
-        //6TmpHook::hook();
+        //TmpHook::hook();
     }
 } // namespace OreShop

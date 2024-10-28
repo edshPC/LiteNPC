@@ -3,13 +3,12 @@ const NAMESPACE = "LiteNPC";
 let plugin = "default", serverStarted = false, queue = [];
 
 const API = {}, API_funcs = ["create", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
-    "lookAt", "swing", "interactBlock", "say", "delay", "setHand", "sit"];
+	"lookAt", "swing", "interactBlock", "say", "delay", "setHand", "sit"];
 API_funcs.forEach(f => API[f] = ll.imports(NAMESPACE, f));
 
 function parsePositionArgs(args, Type = IntPos) {
-	if (!(args[0] instanceof IntPos && args[0] instanceof FloatPos))
-	    args = [new Type(...args.slice(0, 3), 0), ...args.slice(3)];
-	if (args.length == 1) return args[0];
+	if (!(args[0] instanceof IntPos || args[0] instanceof FloatPos))
+		args = [new Type(...args.slice(0, 3), 0), ...args.slice(3)];
 	return args;
 }
 
@@ -17,9 +16,9 @@ export default class LiteNPC {
 	id = 0;
 	cbId = 0;
 	constructor(args) {
-        this.name = args[0];
-        this.args = args;
-    }
+		this.name = args[0];
+		this.args = args;
+	}
 
 	load() {
 		let [name, pos, rot, skin, callback] = this.args;
@@ -28,7 +27,7 @@ export default class LiteNPC {
 	}
 
 	setCallback(callback) {
-		ll.exports(callback, NAMESPACE, `NPC_${this.id}_${this.cbId}`);
+		ll.exports(pl => { if(callback) callback(pl); }, NAMESPACE, `NPC_${this.id}_${this.cbId}`);
 		API.setCallback(this.id, this.cbId++);
 	}
 
@@ -43,21 +42,21 @@ export default class LiteNPC {
 	}
 
 	emote(name) { API.emote(this.id, name);	}
-	lookAt(...args) { API.lookAt(this.id, parsePositionArgs(args, FloatPos)); }
+	lookAt(...args) { API.lookAt(this.id, parsePositionArgs(args, FloatPos)[0]); }
 	swing() { API.swing(this.id); }
-	interactBlock(...args) { API.interactBlock(this.id, parsePositionArgs(args)); }
+	interactBlock(...args) { API.interactBlock(this.id, parsePositionArgs(args)[0]); }
 	setHand(item) { API.setHand(this.id, item); }
-	sit() { API.sit(this.id); }
+	sit(setSitting = true) { API.sit(this.id, setSitting); }
 
-	say(msg, instant) {
-        msg = `§6[§f${this.name}§6] §f${msg}`;
-        if (instant) mc.broadcast(msg);
-        else API.say(this.id, msg);
-    }
+	say(msg, instant, name = this.name) {
+		msg = `§6[§f${name}§6] §f${msg}`;
+		if (instant) mc.broadcast(msg);
+		else API.say(this.id, msg);
+	}
 
-    delay(ticks) {
-        API.delay(this.id, ticks);
-    }
+	delay(ticks) {
+		API.delay(this.id, ticks);
+	}
 
 	static create(...args) {
 		let npc = new LiteNPC(args);
@@ -73,4 +72,5 @@ mc.listen("onServerStarted", () => {
 	API.clear(plugin);
 	serverStarted = true;
 	queue.forEach(npc => npc.load());
+	log(`Plugin ${plugin} loaded`);
 });
