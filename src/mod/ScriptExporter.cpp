@@ -31,8 +31,10 @@ namespace LiteNPC {
 			return npc->getRId();
 		});
 
+		EXPORT_NO_ARGS(remove);
+
 		exportAs(NAMESPACE, "clear", [](std::string const& plugin) {
-			for (NPC* npc : externalNPC[plugin]) npc->remove();
+			for (NPC* npc : externalNPC[plugin]) npc->remove(true);
 			externalNPC[plugin].clear();
 		});
 

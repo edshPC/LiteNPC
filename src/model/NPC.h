@@ -30,7 +30,7 @@ namespace LiteNPC {
 		void spawn(Player*);
 		void updateSkin(Player* = nullptr);
 		void updatePosition();
-		void remove();
+		void remove(bool instant = false);
 		void newAction(unique_ptr<Packet> pkt, uint64 delay = 1, function<void()> cb = {});
 		void tick(uint64 tick);
 		void setCallback(function<void(Player*)>);
@@ -54,6 +54,7 @@ namespace LiteNPC {
 		static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = {});
 		static void spawnAll(Player* pl);
 		static NPC* getByRId(unsigned long long rId);
+		static vector<NPC*> getAll();
 		static void saveSkin(string name, SerializedSkin&);
 		static void saveEmotion(string name, string emotionUuid);
 		static void init();

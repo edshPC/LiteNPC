@@ -2,7 +2,7 @@ const NAMESPACE = "LiteNPC";
 
 let plugin = "default", serverStarted = false, queue = [];
 
-const API = {}, API_funcs = ["create", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
+const API = {}, API_funcs = ["create", "remove", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
 	"lookAt", "lookRot", "swing", "interactBlock", "say", "delay", "setHand", "sit"];
 API_funcs.forEach(f => API[f] = ll.imports(NAMESPACE, f));
 
@@ -24,6 +24,10 @@ export default class LiteNPC {
 		let [name, pos, rot, skin, callback] = this.args;
 		this.id = API.create(plugin, name, pos, rot.pitch, rot.yaw, skin);
 		if(callback) this.setCallback(callback);
+	}
+
+	remove() {
+		API.remove(this.id);
 	}
 
 	setCallback(callback) {
@@ -53,13 +57,13 @@ export default class LiteNPC {
 		msg = `§6[§f${name}§6] §f${msg}`;
 		if (instant) mc.broadcast(msg);
 		else API.say(this.id, msg);
+		this.last_msg = msg;
 	}
 
-	decision(msg, pl, choices, name = this.name) {
-		this.say(msg, name);
+	decision(pl, choices, name = this.name) {
 		let fm = mc.newSimpleForm();
 		fm.setTitle(`§l${this.name}`);
-		fm.setContent(`§6[§r${name}§6] §r${msg}`);
+		fm.setContent(this.last_msg);
 		choices.forEach(choice => fm.addButton(choice));
 		return new Promise(resolve => {
 			function callback(pl, id) {

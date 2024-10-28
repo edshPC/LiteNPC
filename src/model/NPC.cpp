@@ -15,7 +15,6 @@
 #include "mc/network/packet/TextPacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
 #include "mc/world/level/dimension/Dimension.h"
-#include "mc/world/level/Spawner.h"
 #include "mc/world/level/BlockSource.h"
 #include "mc/world/level/block/Block.h"
 
@@ -26,11 +25,14 @@ namespace LiteNPC {
     unordered_map<string, SerializedSkin> loadedSkins;
     const Vec3 eyeHeight = {.0f, 1.62f, .0f};
 
-    void NPC::remove() {
-        loadedNPC.erase(runtimeId);
-        RemoveActorPacket pkt{actorId};
-        pkt.sendToClients();
-        delete this;
+    void NPC::remove(bool instant) {
+        if (instant) freeTick = 0;
+        newAction(make_unique<RemoveActorPacket>(actorId));
+        int delay = freeTick + 1 - LEVEL->getCurrentTick().t;
+        Util::setTimeout([this] {
+            loadedNPC.erase(runtimeId);
+            delete this;
+        }, delay * 50);
     }
 
     void NPC::newAction(unique_ptr<Packet> pkt, uint64 delay, function<void()> cb) {
@@ -247,6 +249,12 @@ namespace LiteNPC {
     NPC *NPC::getByRId(uint64 rId) {
         if (loadedNPC.contains(rId)) return loadedNPC.at(rId);
         return nullptr;
+    }
+
+    vector<NPC*> NPC::getAll() {
+        vector<NPC*> ret;
+        for (auto [id, npc]: loadedNPC) ret.push_back(npc);
+        return ret;
     }
 
     void NPC::saveSkin(string name, SerializedSkin &skin) {

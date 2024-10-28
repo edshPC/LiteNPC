@@ -8,7 +8,6 @@
 
 #include "mc/network/ServerNetworkHandler.h"
 #include "mc/world/inventory/transaction/ItemUseOnActorInventoryTransaction.h"
-#include "mc/network/packet/EmoteListPacket.h"
 #include "mc/network/PacketObserver.h"
 #include "mc/network/packet/SetActorLinkPacket.h"
 
@@ -21,13 +20,17 @@ using namespace ll::event;
 
 namespace LiteNPC {
     EVENT_FUNCTION(PlayerJoinEvent) {
-        NPC::spawnAll(&ev.self());
-        EmoteListPacket pkt;
-        pkt.mRuntimeId = ev.self().getRuntimeID();
+        Player* pl = &ev.self();
+        NPC::spawnAll(pl);
+        NPC* npc = NPC::create("", pl->getFeetPos() - Vec3(0, 64, 0),pl->getDimensionId());
         for (auto& [name, uuid] : emotionsConfig.emotions) {
-            pkt.mEmotePieceIds.emplace_back(mce::UUID::fromString(uuid));
+            auto pkt = make_unique<EmotePacket>();
+            pkt->mRuntimeId = npc->getRId();
+            pkt->mPieceId = uuid;
+            pkt->mFlags = 0x2;
+            npc->newAction(move(pkt));
         }
-        ev.self().sendNetworkPacket(pkt);
+        npc->remove();
     }
 
     unordered_map<Player*, string> waitingEmotions;

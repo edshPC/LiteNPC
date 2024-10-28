@@ -3,6 +3,7 @@
 #include <ll/api/command/CommandHandle.h>
 #include <ll/api/command/CommandRegistrar.h>
 #include <ll/api/command/runtime/ParamKind.h>
+#include <mc/network/packet/EmotePacket.h>
 #include <mc/world/level/Command.h>
 
 #define EXECUTE_CMD(name)                                                                                              \
@@ -13,9 +14,7 @@ using namespace ll::command;
 
 namespace LiteNPC {
 
-struct SaveSkinParam {
-    string name;
-};
+struct SaveSkinParam { string name; };
 
 EXECUTE_CMD(SaveSkin) {
     if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
@@ -26,9 +25,7 @@ EXECUTE_CMD(SaveSkin) {
     out.success();
 }
 
-struct SaveAnimationParam {
-    string name;
-};
+struct SaveAnimationParam { string name; };
 
 extern unordered_map<Player*, string> waitingEmotions;
 EXECUTE_CMD(SaveAnimation) {
@@ -36,6 +33,21 @@ EXECUTE_CMD(SaveAnimation) {
     auto pl = static_cast<Player*>(ori.getEntity());
     waitingEmotions[pl] = param.name;
     pl->sendMessage("Waiting for emotion");
+    out.success();
+}
+
+struct TestAnimationParam { CommandRawText name; };
+
+EXECUTE_CMD(TestAnimation) {
+    if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
+    auto pl = static_cast<Player*>(ori.getEntity());
+    if (!emotionsConfig.emotions.contains(param.name.getText())) return out.error("Invalid emotion");
+    Vec3 off = pl->getHeadLookVector();
+    off.y = 0;
+    NPC* npc = NPC::create("testanimation", pl->getFeetPos() + off.normalized()*2,
+        pl->getDimensionId(), Vec2(0, pl->getRotation().y + 180));
+    npc->emote(param.name.getText());
+    Util::setTimeout([npc] { npc->remove(); }, 10000);
     out.success();
 }
 
@@ -48,6 +60,9 @@ void registerCommands() {
 
     auto& cmd1 = registrar.getOrCreateCommand("saveanimation", "Save your emotion for npc", CommandPermissionLevel::GameDirectors);
     cmd1.overload<SaveAnimationParam>().required("name").execute(&executeSaveAnimation);
+
+    auto& cmd2 = registrar.getOrCreateCommand("testanimation", "Test your emotion for npc", CommandPermissionLevel::GameDirectors);
+    cmd2.overload<TestAnimationParam>().required("name").execute(&executeTestAnimation);
 
 }
 } // namespace PlayerRegister
