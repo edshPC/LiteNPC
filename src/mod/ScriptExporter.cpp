@@ -50,6 +50,7 @@ namespace LiteNPC {
 		EXPORT_TWO_ARGS(moveTo, WorldPosType const& pos, pos.pos, float speed, speed);
 		EXPORT_TWO_ARGS(moveToBlock, BlockPosType const& pos, pos.pos, float speed, speed);
 		EXPORT_ONE_ARG(lookAt, WorldPosType const& pos, pos.pos);
+		EXPORT_TWO_ARGS(lookRot, float x, x, float y, y);
 		EXPORT_NO_ARGS(swing);
 		EXPORT_ONE_ARG(interactBlock, BlockPosType const& pos, pos.pos);
 		EXPORT_ONE_ARG(say, string const& text, text);

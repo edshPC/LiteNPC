@@ -43,6 +43,8 @@ namespace LiteNPC {
 		void moveTo(BlockPos pos, float speed = 1);
 		void moveToBlock(BlockPos pos, float speed = 1);
 		void lookAt(Vec3 pos);
+		void lookRot(Vec2 dest);
+		void lookRot(float rotX, float rotY);
 		void swing();
 		void interactBlock(BlockPos bp);
 		void say(const string &text);

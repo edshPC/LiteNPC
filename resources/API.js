@@ -3,7 +3,7 @@ const NAMESPACE = "LiteNPC";
 let plugin = "default", serverStarted = false, queue = [];
 
 const API = {}, API_funcs = ["create", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
-	"lookAt", "swing", "interactBlock", "say", "delay", "setHand", "sit"];
+	"lookAt", "lookRot", "swing", "interactBlock", "say", "delay", "setHand", "sit"];
 API_funcs.forEach(f => API[f] = ll.imports(NAMESPACE, f));
 
 function parsePositionArgs(args, Type = IntPos) {
@@ -27,12 +27,12 @@ export default class LiteNPC {
 	}
 
 	setCallback(callback) {
-		ll.exports(pl => { if(callback) callback(pl); }, NAMESPACE, `NPC_${this.id}_${this.cbId}`);
+		ll.exports(pl => { if(callback) callback(pl, this); }, NAMESPACE, `NPC_${this.id}_${this.cbId}`);
 		API.setCallback(this.id, this.cbId++);
 	}
 
 	waitCallback(callback) {
-		return new Promise(resolve => this.setCallback(pl => { if (callback) callback(pl); resolve(); }));
+		return new Promise(resolve => this.setCallback(pl => { if (callback) callback(pl, this); resolve(); }));
 	}
 
 	moveTo(...args) {
@@ -43,15 +43,31 @@ export default class LiteNPC {
 
 	emote(name) { API.emote(this.id, name);	}
 	lookAt(...args) { API.lookAt(this.id, parsePositionArgs(args, FloatPos)[0]); }
+	lookRot(x, y) { API.lookRot(this.id, x, y); }
 	swing() { API.swing(this.id); }
 	interactBlock(...args) { API.interactBlock(this.id, parsePositionArgs(args)[0]); }
 	setHand(item) { API.setHand(this.id, item); }
 	sit(setSitting = true) { API.sit(this.id, setSitting); }
 
-	say(msg, instant, name = this.name) {
+	say(msg, name = this.name, instant = false) {
 		msg = `§6[§f${name}§6] §f${msg}`;
 		if (instant) mc.broadcast(msg);
 		else API.say(this.id, msg);
+	}
+
+	decision(msg, pl, choices, name = this.name) {
+		this.say(msg, name);
+		let fm = mc.newSimpleForm();
+		fm.setTitle(`§l${this.name}`);
+		fm.setContent(`§6[§r${name}§6] §r${msg}`);
+		choices.forEach(choice => fm.addButton(choice));
+		return new Promise(resolve => {
+			function callback(pl, id) {
+				if (id === undefined) return pl.sendForm(fm, callback);
+				resolve([id, choices[id]]);
+			}
+			pl.sendForm(fm, callback);
+		});
 	}
 
 	delay(ticks) {

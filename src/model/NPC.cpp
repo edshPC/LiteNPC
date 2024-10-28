@@ -121,6 +121,10 @@ namespace LiteNPC {
 
     void NPC::lookAt(Vec3 pos) {
         Vec2 dest = Vec3::rotationFromDirection(pos - this->pos - eyeHeight);
+        lookRot(dest);
+    }
+
+    void NPC::lookRot(Vec2 dest) {
         Vec2 offset = dest - rot;
         if (offset.y > 180) offset.y -= 360;
         else if (offset.y < -180) offset.y += 360;
@@ -133,6 +137,8 @@ namespace LiteNPC {
             updatePosition();
         }
     }
+
+    void NPC::lookRot(float rotX, float rotY) { lookRot(Vec2(rotX, rotY)); }
 
     void NPC::swing() {
         auto pkt = make_unique<AnimatePacket>();
