@@ -94,6 +94,14 @@ namespace LiteNPC {
         newAction(move(pkt));
     }
 
+    void NPC::updateActorData() {
+        auto pkt = make_unique<SetActorDataPacket>();
+        pkt->mId = runtimeId;
+        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Name, name)); // name
+        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size)); // size
+        newAction(move(pkt));
+    }
+
     void NPC::emote(string emoteName) {
         if (!emotionsConfig.emotions.contains(emoteName)) return;
         auto pkt = make_unique<EmotePacket>();
@@ -226,13 +234,14 @@ namespace LiteNPC {
         for (auto [id, npc]: loadedNPC) npc->tick(tick);
     }
 
-    void NPC::setName(string name) {
+    void NPC::rename(string name) {
         this->name = name;
+        updateActorData();
+    }
 
-        SetActorDataPacket pkt;
-        pkt.mId = runtimeId;
-        pkt.mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Name, name)); // text
-        pkt.sendToClients();
+    void NPC::resize(float size) {
+        this->size = size;
+        updateActorData();
     }
 
     void NPC::setSkin(string skin) {

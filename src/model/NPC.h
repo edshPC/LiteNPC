@@ -30,12 +30,14 @@ namespace LiteNPC {
 		void spawn(Player*);
 		void updateSkin(Player* = nullptr);
 		void updatePosition();
+		void updateActorData();
 		void remove(bool instant = false);
 		void newAction(unique_ptr<Packet> pkt, uint64 delay = 1, function<void()> cb = {});
 		void tick(uint64 tick);
 		void setCallback(function<void(Player*)>);
 
-		void setName(string);
+		void rename(string);
+		void resize(float);
 		void setSkin(string);
 		void setHand(const ItemStack &item);
 		void emote(string emoteName);
@@ -68,6 +70,7 @@ namespace LiteNPC {
 		Vec2 rot;
 		int dim;
 		string skinName;
+		float size = 1;
 		const ActorUniqueID actorId = LEVEL->getNewUniqueID();
 		const ActorRuntimeID runtimeId = LEVEL->getNextRuntimeID();
 		const mce::UUID uuid = mce::UUID::random();

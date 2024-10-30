@@ -49,6 +49,8 @@ namespace LiteNPC {
 		});
 
 		EXPORT_ONE_ARG(emote, string const& name, name);
+		EXPORT_ONE_ARG(rename, string const& name, name);
+		EXPORT_ONE_ARG(resize, float size, size);
 		EXPORT_TWO_ARGS(moveTo, WorldPosType const& pos, pos.pos, float speed, speed);
 		EXPORT_TWO_ARGS(moveToBlock, BlockPosType const& pos, pos.pos, float speed, speed);
 		EXPORT_ONE_ARG(lookAt, WorldPosType const& pos, pos.pos);
