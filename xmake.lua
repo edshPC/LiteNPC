@@ -7,7 +7,8 @@ add_repositories("liteldev-repo https://github.com/LiteLDev/xmake-repo.git")
 -- please note that you should add bdslibrary yourself if using dev version
 add_requires(
         "levilamina 0.13.5",
-        "legacyremotecall"
+        "legacyremotecall",
+        "lodepng"
 )
 
 if not has_config("vs_runtime") then
@@ -31,7 +32,8 @@ target("LiteNPC") -- Change this to your mod name.
     add_includedirs("src")
     add_packages(
             "levilamina",
-            "legacyremotecall"
+            "legacyremotecall",
+            "lodepng"
     )
     add_shflags("/DELAYLOAD:bedrock_server.dll") -- To use symbols provided by SymbolProvider.
     set_exceptions("none") -- To avoid conflicts with /EHa.

@@ -92,6 +92,7 @@ namespace LiteNPC {
     void registerEvents() {
         auto &bus = EventBus::getInstance();
         EVENT_REGISTER(PlayerJoinEvent);
+
         SendEmotionHook::hook();
         ChangeSkinHook::hook();
         OnUseNPCHook::hook();

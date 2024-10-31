@@ -91,8 +91,20 @@ export default class LiteNPC {
 }
 
 mc.listen("onServerStarted", () => {
+	if (plugin == "default") {
+		const log_path = "logs/LiteNPC.log";
+		File.writeTo(log_path, "");
+		logger.setFile(log_path);
+		logger.info("Loading...");
+		logger.setFile(" ");
+		let logs = File.readFrom(log_path);
+		plugin = /\[.*?].*\[(.*?)]/g.exec(logs)[1];
+	}
+	logger.setTitle(NAMESPACE);
+	logger.info(`Plugin ${plugin} loaded`);
+	logger.setTitle(plugin);
+
 	API.clear(plugin);
 	serverStarted = true;
 	queue.forEach(npc => npc.load());
-	log(`Plugin ${plugin} loaded`);
 });

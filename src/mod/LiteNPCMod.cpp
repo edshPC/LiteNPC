@@ -6,6 +6,9 @@
 #include "ll/api/mod/RegisterHelper.h"
 #include "Global.h"
 #include "mc/network/packet/TextPacket.h"
+#include "mc/resources/ResourcePackRepository.h"
+#include "mc/resources/ResourcePack.h"
+
 
 namespace LiteNPC {
 void registerEvents();
@@ -24,6 +27,7 @@ bool LiteNPCMod::load() {
     ll::config::loadConfig(emotionsConfig, NATIVE_MOD.getConfigDir() / "emotions.json");
     registerEvents();
     registerExports();
+    Util::loadSkinPacks();
     return true;
 }
 

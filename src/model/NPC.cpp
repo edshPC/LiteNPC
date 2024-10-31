@@ -71,17 +71,17 @@ namespace LiteNPC {
             sit(false);
             sit();
         }
-        //Util::setInterval([this] {setHand(ItemStack("minecraft:stone"));}, 1000);
     }
 
     void NPC::updateSkin(Player *pl) {
-        if (!loadedSkins.contains(skinName)) return;
+        if (!Util::tryLoadSkin(skinName)) return;
         auto &skin = loadedSkins.at(skinName);
         PlayerSkinPacket pkt;
         pkt.mUUID = uuid;
         pkt.mSkin = skin;
         pkt.mLocalizedNewSkinName = skinName;
-        pl->sendNetworkPacket(pkt);
+        if (pl) pl->sendNetworkPacket(pkt);
+        else pkt.sendToClients();
     }
 
     void NPC::updatePosition() {
@@ -177,9 +177,7 @@ namespace LiteNPC {
         newAction(move(pkt));
     }
 
-    void NPC::delay(uint64 ticks) {
-        if (ticks) newAction(nullptr, ticks);
-    }
+    void NPC::delay(uint64 ticks) { freeTick += ticks; }
 
     void NPC::sit(bool setSitting) {
         if (setSitting && !isSitting) {
@@ -215,9 +213,7 @@ namespace LiteNPC {
         catch (...) { LOGGER.error("{}: Cant fire callback", name); }
     }
 
-    void NPC::setCallback(function<void(Player *pl)> callback) {
-        this->callback = callback;
-    }
+    void NPC::setCallback(function<void(Player *pl)> callback) { this->callback = callback; }
 
     NPC *NPC::create(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player *pl)> callback) {
         NPC *npc = new NPC(name, pos + Vec3(0.5f, 0.0f, 0.5f), dim, rot, skin, callback);
@@ -246,7 +242,7 @@ namespace LiteNPC {
 
     void NPC::setSkin(string skin) {
         this->skinName = skin;
-        for (auto pl: Util::getAllPlayers()) updateSkin(pl);
+        updateSkin();
     }
 
     void NPC::setHand(const ItemStack &item) {
@@ -266,21 +262,17 @@ namespace LiteNPC {
         return ret;
     }
 
+    unordered_map<string, SerializedSkin>& NPC::getLoadedSkins() { return loadedSkins; }
+
     void NPC::saveSkin(string name, SerializedSkin &skin) {
         loadedSkins[name] = skin;
-        auto &newSkin = loadedSkins.at(name);
-
-        newSkin.mId = "Custom" + mce::UUID::random().asString();
-        newSkin.mFullId = newSkin.mId + mce::UUID::random().asString();
-        newSkin.mCapeId = mce::UUID::random().asString();
-        std::stringstream stream;
-        stream << std::hex << ll::random_utils::rand<uint64>();
-        newSkin.mPlayFabId = stream.str();
-        newSkin.setIsTrustedSkin(true);
-
+        auto& newSkin = loadedSkins.at(name);
+        Util::makeUnique(newSkin);
         BinaryStream bs;
         newSkin.write(bs);
         DB.set(name, bs.getAndReleaseData());
+        for (auto [id, npc]: loadedNPC)
+            if (npc->skinName == name) npc->updateSkin();
     }
 
     void NPC::saveEmotion(string name, string emotionUuid) {
@@ -289,14 +281,34 @@ namespace LiteNPC {
     }
 
     void NPC::init() {
-        DB.iter([](string_view k, string_view v) -> bool {
-            string name(k), data(v);
-            loadedSkins[name] = SerializedSkin::createTrustedDefaultSerializedSkin();
-            SerializedSkin &skin = loadedSkins.at(name);
+
+        for (string name : {"default64", "default128"}) {
+            ifstream def(NATIVE_MOD.getModDir() / ("skins/default/" + name));
+            if (!def) continue;
+            std::ostringstream oss;
+            oss << def.rdbuf();
+            string data = oss.str();
             BinaryStream bs(data, true);
+            SerializedSkin skin;
             skin.read(bs);
-            return true;
-        });
+            loadedSkins[name] = skin;
+        }
+
+        // SerializedSkin skin64 = loadedSkins["default64"];
+        // skin64.mSkinImage.mImageBytes = {};
+        // SerializedSkin skin128 = loadedSkins["default128"];
+        // skin128.mSkinImage.mImageBytes = {};
+        //
+        // BinaryStream bs;
+        // skin64.write(bs);
+        // ofstream def64(NATIVE_MOD.getModDir() / "skins/default/default64");
+        // def64 << bs.getAndReleaseData();
+        // def64.close();
+        // bs.reset();
+        // skin128.write(bs);
+        // ofstream def128(NATIVE_MOD.getModDir() / "skins/default/default128");
+        // def128 << bs.getAndReleaseData();
+        // def128.close();
     }
 
 }

@@ -31,6 +31,7 @@ target_include_directories(LiteNPC SYSTEM PRIVATE
     C:/Users/edshh/AppData/Local/.xmake/packages/p/pfr/2.1.1/45e5102591a649fda279e67eaf92482a/include
     C:/Users/edshh/AppData/Local/.xmake/packages/s/symbolprovider/v1.1.0/8aace9a371e5415981bd4144196ba4d8/include
     C:/Users/edshh/AppData/Local/.xmake/packages/l/legacyremotecall/0.8.3/63c2d25250bf45abbfeb41dc01bff394/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/l/lodepng/@default/3c332be551f6485e8d17e1830ee49789/include
 )
 target_compile_definitions(LiteNPC PRIVATE
     NOMINMAX
@@ -86,6 +87,7 @@ target_link_libraries(LiteNPC PRIVATE
     bedrock_server_api
     bedrock_server_var
     LegacyRemoteCall
+    lodepng
 )
 target_link_directories(LiteNPC PRIVATE
     C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/0.13.5/739fa642533f4971b6538cccb1fd32de/lib
@@ -95,6 +97,7 @@ target_link_directories(LiteNPC PRIVATE
     C:/Users/edshh/AppData/Local/.xmake/packages/s/symbolprovider/v1.1.0/8aace9a371e5415981bd4144196ba4d8/lib
     C:/Users/edshh/AppData/Local/.xmake/packages/b/bdslibrary/1.21.3.01/813c57eabb134b8e9dc2800d9cd97bcc/lib
     C:/Users/edshh/AppData/Local/.xmake/packages/l/legacyremotecall/0.8.3/63c2d25250bf45abbfeb41dc01bff394/lib
+    C:/Users/edshh/AppData/Local/.xmake/packages/l/lodepng/@default/3c332be551f6485e8d17e1830ee49789/lib
 )
 target_link_options(LiteNPC PRIVATE
     /DELAYLOAD:bedrock_server.dll

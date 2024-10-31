@@ -57,6 +57,7 @@ namespace LiteNPC {
 		static void spawnAll(Player* pl);
 		static NPC* getByRId(unsigned long long rId);
 		static vector<NPC*> getAll();
+		static unordered_map<string, SerializedSkin>& getLoadedSkins();
 		static void saveSkin(string name, SerializedSkin&);
 		static void saveEmotion(string name, string emotionUuid);
 		static void init();
