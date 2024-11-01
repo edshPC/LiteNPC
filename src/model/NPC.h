@@ -2,6 +2,7 @@
 
 #include <mc/network/ServerNetworkHandler.h>
 #include <mc/network/packet/Packet.h>
+#include <mc/world/actor/player/PlayerActionType.h>
 
 #include "Global.h"
 #include "mc/math/Vec3.h"
@@ -48,6 +49,7 @@ namespace LiteNPC {
 		void lookRot(Vec2 dest);
 		void lookRot(float rotX, float rotY);
 		void swing();
+		void eat(int64 time = 7);
 		void interactBlock(BlockPos bp);
 		void say(const string &text);
 		void delay(uint64 ticks);
@@ -80,6 +82,7 @@ namespace LiteNPC {
 		uint64 freeTick = 0;
 		ItemStack hand = ItemStack::EMPTY_ITEM;
 		bool isSitting = false;
+		bool isEating = false;
 		struct Minecart {
 			ActorUniqueID actorId = LEVEL->getNewUniqueID();
 			ActorRuntimeID runtimeId = LEVEL->getNextRuntimeID();

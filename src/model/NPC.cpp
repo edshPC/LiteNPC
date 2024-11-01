@@ -4,6 +4,8 @@
 
 #include "mc/network/packet/AddPlayerPacket.h"
 #include "mc/network/packet/PlayerSkinPacket.h"
+#include "mc/network/packet/PlayerActionPacket.h"
+#include "mc/network/packet/ActorEventPacket.h"
 #include "mc/network/packet/RemoveActorPacket.h"
 #include "mc/network/packet/SetActorDataPacket.h"
 #include "mc/network/packet/MovePlayerPacket.h""
@@ -17,6 +19,7 @@
 #include "mc/world/level/dimension/Dimension.h"
 #include "mc/world/level/BlockSource.h"
 #include "mc/world/level/block/Block.h"
+#include "mc/world/item/Item.h"
 
 #include "ll/api/utils/RandomUtils.h"
 
@@ -61,6 +64,7 @@ namespace LiteNPC {
         pkt.mRot = rot;
         pkt.mYHeadRot = rot.y;
         pkt.mUnpack.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
+        pkt.mUnpack.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size));
         BinaryStream bs;
         NetworkItemStackDescriptor(hand).write(bs);
         pkt.mCarriedItem.read(bs);
@@ -99,6 +103,7 @@ namespace LiteNPC {
         pkt->mId = runtimeId;
         pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Name, name)); // name
         pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size)); // size
+        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved0, isEating ? 0x10ll : 0ll)); // flags
         newAction(move(pkt));
     }
 
@@ -136,8 +141,8 @@ namespace LiteNPC {
 
     void NPC::lookRot(Vec2 dest) {
         Vec2 offset = dest - rot;
-        if (offset.y > 180) offset.y -= 360;
-        else if (offset.y < -180) offset.y += 360;
+        while (offset.y > 180) offset.y -= 360;
+        while (offset.y < -180) offset.y += 360;
         int steps = std::ceil(offset.length() / 20);
         if (steps == 0) return;
         Vec2 step = offset / steps;
@@ -155,6 +160,14 @@ namespace LiteNPC {
         pkt->mRuntimeId = runtimeId;
         pkt->mAction = AnimatePacket::Action::Swing;
         newAction(move(pkt), 20);
+    }
+
+    void NPC::eat(int64 time) {
+        isEating = true;
+        updateActorData();
+        isEating = false;
+        freeTick += time;
+        updateActorData();
     }
 
     void NPC::interactBlock(BlockPos bp) {
@@ -209,7 +222,9 @@ namespace LiteNPC {
     }
 
     void NPC::onUse(Player *pl) {
-        try { if (callback) callback(pl); }
+        try {
+            if (callback && freeTick < LEVEL->getCurrentTick()) callback(pl);
+        }
         catch (...) { LOGGER.error("{}: Cant fire callback", name); }
     }
 

@@ -1,10 +1,14 @@
+#include <mc/network/packet/ActorEventPacket.h>
+
 #include "Global.h"
 
 #include "ll/api/event/EventBus.h"
 #include "ll/api/event/player/PlayerJoinEvent.h"
 #include "ll/api/memory/Hook.h"
 #include <mc/network/packet/EmotePacket.h>
+#include <mc/network/packet/PlayerActionPacket.h>
 #include <mc/network/packet/PlayerSkinPacket.h>
+#include <mc/network/packet/SetActorDataPacket.h>
 
 #include "mc/network/ServerNetworkHandler.h"
 #include "mc/world/inventory/transaction/ItemUseOnActorInventoryTransaction.h"
@@ -72,19 +76,28 @@ namespace LiteNPC {
         NPC::tickAll(getCurrentTick().t);
     }
 
-    string lastPkt;
+    unordered_set<string> blacklist = {"SpawnParticleEffectPacket", "LevelSoundEventPacket", "LevelChunkPacket", "SubChunkPacket", "ClientCacheMissResponsePacket", "MovePlayerPacket"};
     LL_TYPE_INSTANCE_HOOK(TmpHook, HookPriority::Normal, PacketObserver,
         "?packetSentTo@PacketObserver@@UEAAXAEBVNetworkIdentifier@@AEBVPacket@@I@Z",
         void, NetworkIdentifier const& id, Packet const& pkt, uint size) {
         origin(id, pkt, size);
-        if (pkt.getName() != lastPkt) {
+        if (!blacklist.contains(pkt.getName())) {
             LOGGER.info(pkt.getName());
-            lastPkt = pkt.getName();
-            if (lastPkt == "SetActorLinkPacket") {
-                auto lpkt = static_cast<SetActorLinkPacket const*>(&pkt);
-                LOGGER.info("type {}\na {}\nb {}\nim {}\npas {}",
-                    (int)lpkt->mLink.mType, LEVEL->fetchEntity(lpkt->mLink.mA)->getTypeName(), LEVEL->fetchEntity(lpkt->mLink.mB)->getTypeName(),
-                    lpkt->mLink.mImmediate, lpkt->mLink.mPassengerInitiated);
+            if (pkt.getName() == "ActorEventPacket") {
+                auto lpkt = static_cast<ActorEventPacket const*>(&pkt);
+                LOGGER.info("type {} data {}", (int)lpkt->mEventId, lpkt->mData);
+            }
+            if (pkt.getName() == "SetActorDataPacket") {
+                auto lpkt = static_cast<SetActorDataPacket const*>(&pkt);
+                for (auto& data : lpkt->mPackedItems) {
+                    LOGGER.info("type {}", (ushort)data->mId);
+                    if (data->mId == ActorDataIDs::Reserved0) {
+                        int64 flg = data->getData<int64>().value();
+                        stringstream ss;
+                        ss << std::hex << flg;
+                        LOGGER.info("flags {}", ss.str());
+                    }
+                }
             }
         }
     }
