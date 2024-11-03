@@ -4,8 +4,6 @@
 
 #include "mc/network/packet/AddPlayerPacket.h"
 #include "mc/network/packet/PlayerSkinPacket.h"
-#include "mc/network/packet/PlayerActionPacket.h"
-#include "mc/network/packet/ActorEventPacket.h"
 #include "mc/network/packet/RemoveActorPacket.h"
 #include "mc/network/packet/SetActorDataPacket.h"
 #include "mc/network/packet/MovePlayerPacket.h""
@@ -15,18 +13,21 @@
 #include "mc/network/packet/SetActorLinkPacket.h"
 #include "mc/network/packet/MobEquipmentPacket.h"
 #include "mc/network/packet/TextPacket.h"
+#include "mc/network/packet/PlaySoundPacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
 #include "mc/world/level/dimension/Dimension.h"
 #include "mc/world/level/BlockSource.h"
 #include "mc/world/level/block/Block.h"
-#include "mc/world/item/Item.h"
 
 #include "ll/api/utils/RandomUtils.h"
+#include "ll/api/form/SimpleForm.h"
 
 namespace LiteNPC {
     unordered_map<uint64, NPC*> loadedNPC;
     unordered_map<string, SerializedSkin> loadedSkins;
     const Vec3 eyeHeight = {.0f, 1.62f, .0f};
+    deque<string> current_dialogue;
+    deque<deque<string>> dialog_history = {{}};
 
     void NPC::remove(bool instant) {
         if (instant) freeTick = 0;
@@ -107,6 +108,30 @@ namespace LiteNPC {
         newAction(move(pkt));
     }
 
+    void NPC::updateDialogue() {
+        if (!current_dialogue.empty()) {
+            TextPacket pkt;
+            pkt.mType = TextPacketType::Popup;
+            pkt.mMessage = Util::contatenateDialogue(current_dialogue);
+            pkt.sendToClients();
+        }
+    }
+
+    void NPC::openDialogueHistory(Player* pl) {
+        ll::form::SimpleForm form;
+        form.setTitle("История диалогов");
+        for (const auto& dialogue : dialog_history) {
+            if (dialogue.empty()) continue;
+            form.appendButton(dialogue.front(), [&dialogue](Player& pl) {
+                ll::form::SimpleForm form;
+                form.setTitle("Диалог");
+                form.setContent(Util::contatenateDialogue(dialogue));
+                form.sendTo(pl);
+            });
+        }
+        form.sendTo(*pl);
+    }
+
     void NPC::emote(string emoteName) {
         if (!emotionsConfig.emotions.contains(emoteName)) return;
         auto pkt = make_unique<EmotePacket>();
@@ -117,6 +142,7 @@ namespace LiteNPC {
     }
 
     void NPC::moveTo(Vec3 dest, float speed) {
+        if (isSitting) sit(false);
         Vec3 offset = dest - pos;
         int steps = std::ceil(offset.length() / (.21585f * speed));
         if (steps == 0) return;
@@ -183,14 +209,22 @@ namespace LiteNPC {
         swing();
     }
 
-    void NPC::say(const string &text) {
-        auto pkt = make_unique<TextPacket>();
-        pkt->mType = TextPacketType::Raw;
-        pkt->mMessage = text;
-        newAction(move(pkt));
+    void NPC::say(const string &text, bool saveHistory) {
+        if (saveHistory) newAction(nullptr, 1, [this, text] {
+            current_dialogue.push_back(text);
+            if (current_dialogue.size() > 2) current_dialogue.pop_front();
+            updateDialogue();
+            dialog_history.front().push_back(text);
+        });
+        else {
+            auto pkt = make_unique<TextPacket>();
+            pkt->mType = TextPacketType::Popup;
+            pkt->mMessage = text + "\n§r";
+            newAction(move(pkt));
+        }
     }
 
-    void NPC::delay(uint64 ticks) { freeTick += ticks; }
+    void NPC::delay(uint64 ticks) { newAction(nullptr, ticks); }
 
     void NPC::sit(bool setSitting) {
         if (setSitting && !isSitting) {
@@ -221,6 +255,25 @@ namespace LiteNPC {
         }
     }
 
+    void NPC::finishDialogue() {
+        newAction(nullptr, 1, [this] {
+            current_dialogue.clear();
+            dialog_history.emplace_front();
+        });
+        lookRot(rot + Vec2(45, 0));
+        lookRot(rot - Vec2(45, 0));
+    }
+
+    void NPC::playSound(const string& name, float volume, float pitch) {
+        auto pkt = make_unique<PlaySoundPacket>(name, pos, volume, pitch);
+        newAction(move(pkt));
+    }
+
+    void NPC::stop() {
+        actions.clear();
+        freeTick = 0;
+    }
+
     void NPC::onUse(Player *pl) {
         try {
             if (callback && freeTick < LEVEL->getCurrentTick()) callback(pl);
@@ -243,6 +296,7 @@ namespace LiteNPC {
 
     void NPC::tickAll(uint64 tick) {
         for (auto [id, npc]: loadedNPC) npc->tick(tick);
+        if (tick % 20 == 0) updateDialogue();
     }
 
     void NPC::rename(string name) {
@@ -308,22 +362,6 @@ namespace LiteNPC {
             skin.read(bs);
             loadedSkins[name] = skin;
         }
-
-        // SerializedSkin skin64 = loadedSkins["default64"];
-        // skin64.mSkinImage.mImageBytes = {};
-        // SerializedSkin skin128 = loadedSkins["default128"];
-        // skin128.mSkinImage.mImageBytes = {};
-        //
-        // BinaryStream bs;
-        // skin64.write(bs);
-        // ofstream def64(NATIVE_MOD.getModDir() / "skins/default/default64");
-        // def64 << bs.getAndReleaseData();
-        // def64.close();
-        // bs.reset();
-        // skin128.write(bs);
-        // ofstream def128(NATIVE_MOD.getModDir() / "skins/default/default128");
-        // def128 << bs.getAndReleaseData();
-        // def128.close();
     }
 
 }

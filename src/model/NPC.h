@@ -51,9 +51,12 @@ namespace LiteNPC {
 		void swing();
 		void eat(int64 time = 7);
 		void interactBlock(BlockPos bp);
-		void say(const string &text);
+		void say(const string &text, bool saveHistory = true);
 		void delay(uint64 ticks);
 		void sit(bool setSitting = true);
+		void finishDialogue();
+		void playSound(const string& name, float volume = 1, float pitch = 1);
+		void stop();
 
 		static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = {});
 		static void spawnAll(Player* pl);
@@ -64,6 +67,8 @@ namespace LiteNPC {
 		static void saveEmotion(string name, string emotionUuid);
 		static void init();
 		static void tickAll(uint64 tick);
+		static void updateDialogue();
+		static void openDialogueHistory(Player*);
 
 		uint64 getRId() { return runtimeId; }
 

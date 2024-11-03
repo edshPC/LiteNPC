@@ -57,12 +57,25 @@ namespace LiteNPC {
 		EXPORT_TWO_ARGS(lookRot, float x, x, float y, y);
 		EXPORT_NO_ARGS(swing);
 		EXPORT_ONE_ARG(interactBlock, BlockPosType const& pos, pos.pos);
-		EXPORT_ONE_ARG(say, string const& text, text);
+		EXPORT_TWO_ARGS(say, string const& text, text, bool saveHistory, saveHistory);
+		EXPORT_NO_ARGS(finishDialogue);
 		EXPORT_ONE_ARG(delay, int64 delay, delay);
 		EXPORT_ONE_ARG(setHand, ItemType const& item, *item.ptr);
 		EXPORT_ONE_ARG(setSkin, string const& name, name);
 		EXPORT_ONE_ARG(sit, bool setSitting, setSitting);
 		EXPORT_ONE_ARG(eat, int64 times, times);
+		EXPORT_NO_ARGS(stop);
+
+		exportAs(NAMESPACE, "openDialogueHistory", &NPC::openDialogueHistory);
+		exportAs(NAMESPACE, "playSound", [](int64 rId, const string& name, float volume, float pitch) {
+			if (auto npc = NPC::getByRId(rId)) npc->playSound(name, volume, pitch);
+		});
+		exportAs(NAMESPACE, "sendPlaySound", [](
+			WorldPosType const& pos, const string& name,
+			float volume, float pitch) {
+				Util::sendPlaySound(pos.pos, name, volume, pitch);
+		});
+
 	}
 
 }

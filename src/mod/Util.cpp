@@ -7,6 +7,7 @@
 #include <mc/deps/core/utility/BinaryStream.h>
 #include <mc/deps/json/Reader.h>
 #include <mc/deps/json/ValueIterator.h>
+#include <mc/network/packet/PlaySoundPacket.h>
 
 #include "lodepng.h"
 
@@ -60,6 +61,12 @@ namespace LiteNPC::Util {
             return true;
         });
         return player_list;
+    }
+
+    std::string contatenateDialogue(const std::deque<std::string>& dialogue) {
+        stringstream ss;
+        for (const auto& text : dialogue) ss << text << "\n§r\n";
+        return ss.str();
     }
 
     void makeUnique(SerializedSkin& skin) {
@@ -129,6 +136,7 @@ namespace LiteNPC::Util {
             Json::Value skins, geometries;
             reader.parse(skins_stream, skins, false);
             reader.parse(geometry_stream, geometries, false);
+            skins_stream.close(); geometry_stream.close();
             Json::Value format_version = geometries.get("format_version", {});
             for (const Json::Value& skin : skins.get("skins", {})) {
                 SkinData* skinData = new SkinData();
@@ -141,6 +149,11 @@ namespace LiteNPC::Util {
             }
         }
         LOGGER.info("{} pack skins loaded", skinDatas.size());
+    }
+
+    void sendPlaySound(Vec3 pos, const string& name, float volume, float pitch) {
+        PlaySoundPacket pkt(name, pos, volume, pitch);
+        pkt.sendToClients();
     }
 
 } // namespace LiteNPC::Util
