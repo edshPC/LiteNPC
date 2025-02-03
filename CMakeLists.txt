@@ -16,27 +16,34 @@ target_include_directories(LiteNPC PRIVATE
     src
 )
 target_include_directories(LiteNPC SYSTEM PRIVATE
-    C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/0.13.5/739fa642533f4971b6538cccb1fd32de/include
-    C:/Users/edshh/AppData/Local/.xmake/packages/e/entt/41aab920/10253c39aca14760ae4382272800b680/include
-    C:/Users/edshh/AppData/Local/.xmake/packages/e/expected-lite/v0.7.0/f85e87c5d5ac4699abb5042c8a055c3e/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/1.0.1/8a2ce0d166104d6c8b7c173c9537d51c/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/e/entt/v3.14.0/3822e64c6ba14bb99ba35d14302954bf/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/e/expected-lite/v0.8.0/36ca3aab48a04473a0b2d34e01875b34/include
     C:/Users/edshh/AppData/Local/.xmake/packages/f/fmt/10.2.1/2eeacf73125546e1ae5a2a161567d6e6/include
     C:/Users/edshh/AppData/Local/.xmake/packages/g/gsl/v4.0.0/cc4533ab1d88423b98d8fbee7dce0557/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/g/glm/1.0.1/18615f0387cd4e2ab2e9ea9965afc784/include
     C:/Users/edshh/AppData/Local/.xmake/packages/l/leveldb/1.23/2532d000dc9d47cbb618c80ba0e6d806/include
-    C:/Users/edshh/AppData/Local/.xmake/packages/s/snappy/1.1.10/e45a9f0e551f4f9d8daab8a8138033d1/include
-    C:/Users/edshh/AppData/Local/.xmake/packages/m/magic_enum/v0.9.5/764b9283dd254a1093736469fb36ae85/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/s/snappy/1.2.1/95042f33987c4d339f7e96106057275f/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/m/magic_enum/v0.9.7/03e2990032db4ea08102d17ff8a57da7/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/m/magic_enum/v0.9.7/03e2990032db4ea08102d17ff8a57da7/include/magic_enum
     C:/Users/edshh/AppData/Local/.xmake/packages/n/nlohmann_json/v3.11.3/826582eb66794908a16a49dbdd33bec4/include
     C:/Users/edshh/AppData/Local/.xmake/packages/r/rapidjson/v1.1.0/0f134bb496e5466f91a92e689450b200/include
-    C:/Users/edshh/AppData/Local/.xmake/packages/c/ctre/3.8.1/354f59ffe01146af8f95691d1df61dab/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/t/type_safe/v0.2.4/4b33a9a5c8154bd58b7d4007150f50b7/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/d/debug_assert/2022.11.13/9c6fc08e3abe475da93722bd8d8442ff/include
     C:/Users/edshh/AppData/Local/.xmake/packages/p/pcg_cpp/v1.0.0/6c550fbfc1bb49fbbed872829f6090b0/include
     C:/Users/edshh/AppData/Local/.xmake/packages/p/pfr/2.1.1/45e5102591a649fda279e67eaf92482a/include
-    C:/Users/edshh/AppData/Local/.xmake/packages/s/symbolprovider/v1.1.0/8aace9a371e5415981bd4144196ba4d8/include
-    C:/Users/edshh/AppData/Local/.xmake/packages/l/legacyremotecall/0.8.3/63c2d25250bf45abbfeb41dc01bff394/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/p/parallel-hashmap/v1.3.12/47b4dd3f84f34e9d98b4cde1eedee54d/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/c/concurrentqueue/v1.0.4/0cd923cdfb6a4256954a994422b17de9/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/c/concurrentqueue/v1.0.4/0cd923cdfb6a4256954a994422b17de9/include/concurrentqueue/moodycamel
+    C:/Users/edshh/AppData/Local/.xmake/packages/l/legacyremotecall/0.9.0-rc.1/b7cf52ed7d64477dbebe415f057c9fe5/include
     C:/Users/edshh/AppData/Local/.xmake/packages/l/lodepng/@default/3c332be551f6485e8d17e1830ee49789/include
 )
 target_compile_definitions(LiteNPC PRIVATE
     NOMINMAX
     UNICODE
     ENTT_PACKED_PAGE=128
+    ENTT_SPARSE_PAGE=2048
+    ENTT_NO_MIXIN
 )
 target_compile_options(LiteNPC PRIVATE
     $<$<COMPILE_LANGUAGE:C>:/EHa>
@@ -84,23 +91,20 @@ target_link_libraries(LiteNPC PRIVATE
     leveldb
     snappy
     SymbolProvider
-    bedrock_server_api
-    bedrock_server_var
     LegacyRemoteCall
     lodepng
 )
 target_link_directories(LiteNPC PRIVATE
-    C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/0.13.5/739fa642533f4971b6538cccb1fd32de/lib
+    C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/1.0.1/8a2ce0d166104d6c8b7c173c9537d51c/lib
     C:/Users/edshh/AppData/Local/.xmake/packages/f/fmt/10.2.1/2eeacf73125546e1ae5a2a161567d6e6/lib
     C:/Users/edshh/AppData/Local/.xmake/packages/l/leveldb/1.23/2532d000dc9d47cbb618c80ba0e6d806/lib
-    C:/Users/edshh/AppData/Local/.xmake/packages/s/snappy/1.1.10/e45a9f0e551f4f9d8daab8a8138033d1/lib
-    C:/Users/edshh/AppData/Local/.xmake/packages/s/symbolprovider/v1.1.0/8aace9a371e5415981bd4144196ba4d8/lib
-    C:/Users/edshh/AppData/Local/.xmake/packages/b/bdslibrary/1.21.3.01/813c57eabb134b8e9dc2800d9cd97bcc/lib
-    C:/Users/edshh/AppData/Local/.xmake/packages/l/legacyremotecall/0.8.3/63c2d25250bf45abbfeb41dc01bff394/lib
+    C:/Users/edshh/AppData/Local/.xmake/packages/s/snappy/1.2.1/95042f33987c4d339f7e96106057275f/lib
+    C:/Users/edshh/AppData/Local/.xmake/packages/s/symbolprovider/v1.2.0/716edebcb0f14dbbbc97a0d6aa352593/lib
+    C:/Users/edshh/AppData/Local/.xmake/packages/l/legacyremotecall/0.9.0-rc.1/b7cf52ed7d64477dbebe415f057c9fe5/lib
     C:/Users/edshh/AppData/Local/.xmake/packages/l/lodepng/@default/3c332be551f6485e8d17e1830ee49789/lib
 )
 target_link_options(LiteNPC PRIVATE
-    /DELAYLOAD:bedrock_server.dll
+    /DELAYLOAD:bedrock_runtime.dll
 )
 target_sources(LiteNPC PRIVATE
     src/mod/Command.cpp

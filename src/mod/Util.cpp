@@ -1,22 +1,25 @@
 #include "Global.h"
 
-#include "ll/api/schedule/Scheduler.h"
 #include "mod/Util.h"
 
+#include "ll/api/coro/CoroTask.h"
+#include "ll/api/thread/ServerThreadExecutor.h"
 #include <ll/api/utils/RandomUtils.h>
 #include <mc/deps/core/utility/BinaryStream.h>
+#include <mc/deps/core/image/ImageFormat.h>
+#include <mc/deps/core/image/ImageUsage.h>
 #include <mc/deps/json/Reader.h>
 #include <mc/deps/json/ValueIterator.h>
 #include <mc/network/packet/PlaySoundPacket.h>
 
 #include "lodepng.h"
 
-using namespace ll::schedule;
+using namespace ll::coro;
 
 namespace LiteNPC::Util {
-    ServerTimeScheduler taskScheduler;
-    unordered_map<int, std::shared_ptr<Task<ll::chrono::ServerClock>>> tasks;
-    int lastTaskId = 0;
+    std::atomic_int timeTaskId = 0;
+    std::mutex locker;
+    unordered_set<int> tasks;
 
     struct SkinData {
         string name;
@@ -26,21 +29,41 @@ namespace LiteNPC::Util {
     };
     unordered_map<string, SkinData*> skinDatas;
 
-    int setTimeout(function<void()> f, int ms) {
-        tasks[++lastTaskId] = taskScheduler.add<DelayTask>(chrono::milliseconds(ms), f);
-        return lastTaskId;
+    int setTimeout(const function<void()>& f, int ms) {
+        int tid = ++timeTaskId;
+        keepThis([f, ms, tid]() -> CoroTask<> {
+            co_await std::chrono::milliseconds(ms);
+            std::lock_guard lock(locker);
+            if (!tasks.contains(tid)) co_return;
+            f();
+            clearTask(tid);
+        }).launch(ll::thread::ServerThreadExecutor::getDefault());
+        std::lock_guard lock(locker);
+        tasks.insert(tid);
+        return tid;
     }
 
-    int setInterval(function<void()> f, int ms, int count) {
-        tasks[++lastTaskId] = taskScheduler.add<RepeatTask>(chrono::milliseconds(ms), f, count);
-        return lastTaskId;
+    int setInterval(const function<void()>& f, int ms, int count) {
+        int tid = ++timeTaskId;
+        keepThis([f, ms, count, tid]() -> CoroTask<> {
+            int left = count;
+            while (true) {
+                co_await std::chrono::milliseconds(ms);
+                std::lock_guard lock(locker);
+                if (!tasks.contains(tid)) break;
+                f();
+                if (count && --left == 0) break;
+            }
+            clearTask(tid);
+        }).launch(ll::thread::ServerThreadExecutor::getDefault());
+        std::lock_guard lock(locker);
+        tasks.insert(tid);
+        return tid;
     }
 
-    void clearTask(int id) {
-        if (tasks.contains(id)) {
-            tasks.at(id)->cancel();
-            tasks.erase(id);
-        }
+    void clearTask(int tid) {
+        std::lock_guard lock(locker);
+        tasks.erase(tid);
     }
 
     std::vector<std::string> split(std::string s, const std::string& delimiter) {
@@ -71,7 +94,7 @@ namespace LiteNPC::Util {
 
     void makeUnique(SerializedSkin& skin) {
         skin.mId = "Custom" + mce::UUID::random().asString();
-        skin.mFullId = skin.mId + mce::UUID::random().asString();
+        skin.mFullId = *skin.mId + mce::UUID::random().asString();
         skin.mCapeId = mce::UUID::random().asString();
         std::stringstream stream;
         stream << std::hex << ll::random_utils::rand<uint64>();
@@ -81,11 +104,12 @@ namespace LiteNPC::Util {
 
     bool readImage(const filesystem::path &path, mce::Image &image) {
         image.imageFormat = mce::ImageFormat::RGBA8Unorm;
-        image.mUsage = mce::ImageUsage::sRGB;
+        image.mUsage = mce::ImageUsage::SRGB;
         vector<uchar> data;
         auto err = lodepng::decode(data, image.mWidth, image.mHeight, path.string());
         if (err) return false;
-        image.mImageBytes = {data};
+        image.mImageBytes = mce::Blob(data.size());
+        std::copy(data.begin(), data.end(), **image.mImageBytes->mBlob);
         return true;
     }
 
@@ -99,10 +123,10 @@ namespace LiteNPC::Util {
             skins[name] = skin;
             return true;
         }
-        mce::Image image;
+        mce::Image image(0, 0, mce::ImageFormat::Unknown, mce::ImageUsage::Unknown);
         if (readImage(NATIVE_MOD.getModDir() / std::format("skins/{}.png", name), image)) {
             SerializedSkin skin = image.mWidth == 128 ? skins.at("default128") : skins.at("default64");
-            skin.mSkinImage = image;
+            skin.mSkinImage = std::move(image);;
             makeUnique(skin);
             skins[name] = skin;
             return true;
@@ -111,7 +135,7 @@ namespace LiteNPC::Util {
             SkinData* skinData = skinDatas.at(name);
             if (!readImage(skinData->path, image)) return false;
             SerializedSkin skin = skins.at("default64");
-            skin.mSkinImage = image;
+            skin.mSkinImage = std::move(image);
             Json::Value geometry;
             skin.mGeometryData = skinData->geometry;
             skin.mDefaultGeometryName = skinData->geometry_name;

@@ -15,6 +15,7 @@
 #include "mc/network/packet/TextPacket.h"
 #include "mc/network/packet/PlaySoundPacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
+#include "mc/world/actor/ActorLink.h"
 #include "mc/world/level/dimension/Dimension.h"
 #include "mc/world/level/BlockSource.h"
 #include "mc/world/level/block/Block.h"
@@ -32,7 +33,7 @@ namespace LiteNPC {
     void NPC::remove(bool instant) {
         if (instant) freeTick = 0;
         newAction(make_unique<RemoveActorPacket>(actorId));
-        int delay = freeTick + 1 - LEVEL->getCurrentTick().t;
+        int delay = freeTick + 1 - LEVEL->getCurrentTick().tickID;
         Util::setTimeout([this] {
             loadedNPC.erase(runtimeId);
             delete this;
@@ -40,7 +41,7 @@ namespace LiteNPC {
     }
 
     void NPC::newAction(unique_ptr<Packet> pkt, uint64 delay, function<void()> cb) {
-        uint64 tick = std::max(LEVEL->getCurrentTick().t + 1, freeTick);
+        uint64 tick = std::max(LEVEL->getCurrentTick().tickID + 1, freeTick);
         freeTick = tick + delay;
         actions[tick] = { move(pkt), cb };
     }
@@ -54,7 +55,7 @@ namespace LiteNPC {
     }
 
     void NPC::spawn(Player *pl) {
-        if (pl->getDimensionId() != dim) return;
+        if (pl->getDimensionId().id != dim) return;
 
         AddPlayerPacket pkt;
         pkt.mName = name;
@@ -64,7 +65,7 @@ namespace LiteNPC {
         pkt.mPos = pos;
         pkt.mRot = rot;
         pkt.mYHeadRot = rot.y;
-        pkt.mUnpack.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
+        pkt.mUnpack->emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
         pl->sendNetworkPacket(pkt);
 
         Util::setTimeout([this, pl] {
@@ -90,12 +91,18 @@ namespace LiteNPC {
     }
 
     void NPC::updatePosition() {
-        auto pkt = make_unique<MovePlayerPacket>();
+        auto pls = Util::getAllPlayers();
+        if (pls.empty()) return;
+        auto pkt = make_unique<MovePlayerPacket>(**pls.begin(), Vec3());
         pkt->mPlayerID = runtimeId;
         pkt->mPos = pos + eyeHeight;
         pkt->mRot = rot;
         pkt->mYHeadRot = rot.y;
+        pkt->mResetPosition = PlayerPositionModeComponent::PositionMode::Normal;
         pkt->mOnGround = true;
+        pkt->mRidingID = 0;
+        pkt->mCause = 0;
+        pkt->mSourceEntityType = 0;
         newAction(move(pkt));
     }
 
@@ -240,20 +247,20 @@ namespace LiteNPC {
             pkt->mRuntimeId = minecart.runtimeId;
             pos.y -= .5f;
             pkt->mPos = pos;
-            pkt->mUnpack.emplace_back(DataItem::create(ActorDataIDs::Reserved038, .0001f));
+            pkt->mUnpack->emplace_back(DataItem::create(ActorDataIDs::Reserved038, .0001f));
             ActorLink link;
-            link.mType = ActorLinkType::Passenger;
-            link.mA = minecart.actorId;
-            link.mB = actorId;
-            pkt->mLinks.emplace_back(link);
+            link.type = ActorLinkType::Passenger;
+            link.A = minecart.actorId;
+            link.B = actorId;
+            pkt->mLinks->emplace_back(link);
             newAction(move(pkt));
             isSitting = true;
         } else if (!setSitting && isSitting) {
             pos.y += .5f;
             ActorLink link;
-            link.mType = ActorLinkType::None;
-            link.mA = minecart.actorId;
-            link.mB = actorId;
+            link.type = ActorLinkType::None;
+            link.A = minecart.actorId;
+            link.B = actorId;
             newAction(make_unique<SetActorLinkPacket>(link));
             newAction(make_unique<RemoveActorPacket>(minecart.actorId));
             updatePosition();
@@ -294,7 +301,7 @@ namespace LiteNPC {
 
     void NPC::onUse(Player *pl) {
         try {
-            if (callback && freeTick < LEVEL->getCurrentTick()) callback(pl);
+            if (callback && freeTick < LEVEL->getCurrentTick().tickID) callback(pl);
         }
         catch (...) { LOGGER.error("{}: Cant fire callback", name); }
     }

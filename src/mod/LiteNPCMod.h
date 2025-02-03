@@ -16,7 +16,7 @@ public:
     static LiteNPCMod& getInstance();
     static ll::data::KeyValueDB& getDB();
 
-    LiteNPCMod(ll::mod::NativeMod& self) : mSelf(self) {}
+    LiteNPCMod() : mSelf(*ll::mod::NativeMod::current()) {}
 
     [[nodiscard]] ll::mod::NativeMod& getSelf() const { return mSelf; }
 

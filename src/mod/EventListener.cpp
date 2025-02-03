@@ -38,9 +38,9 @@ namespace LiteNPC {
     }
 
     unordered_map<Player*, string> waitingEmotions;
-    AUTO_TI_HOOK(SendEmotion, ServerNetworkHandler, handle, void, NetworkIdentifier const& source,
+    AUTO_TI_HOOK(SendEmotion, ServerNetworkHandler, $handle, void, NetworkIdentifier const& source,
                  EmotePacket const& packet) {
-        auto sp = getServerPlayer(source, packet.mClientSubId);
+        auto sp = _getServerPlayer(source, packet.mClientSubId);
         if (sp && waitingEmotions.contains(sp)) {
             NPC::saveEmotion(waitingEmotions.at(sp), packet.mPieceId);
             waitingEmotions.erase(sp);
@@ -48,9 +48,9 @@ namespace LiteNPC {
         }
     }
 
-    AUTO_TI_HOOK(ChangeSkin, ServerNetworkHandler, handle, void, NetworkIdentifier const& source,
+    AUTO_TI_HOOK(ChangeSkin, ServerNetworkHandler, $handle, void, NetworkIdentifier const& source,
                  PlayerSkinPacket const& pkt) {
-        auto pl = getServerPlayer(source, pkt.mClientSubId);
+        auto pl = _getServerPlayer(source, pkt.mClientSubId);
         if (pl) {
             auto& skin = pkt.mSkin;
             pl->updateSkin(skin, 1);
@@ -59,29 +59,26 @@ namespace LiteNPC {
         }
     }
 
-    AUTO_TI_HOOK(PlayerChangeDimension, Level, requestPlayerChangeDimension, void, Player& pl, ChangeDimensionRequest&&) {
+    AUTO_TI_HOOK(PlayerChangeDimension, Level, $requestPlayerChangeDimension, void, Player& pl, ChangeDimensionRequest&&) {
         Util::setTimeout([&pl] { NPC::spawnAll(&pl); });
     }
 
-    LL_TYPE_INSTANCE_HOOK(OnUseNPCHook, HookPriority::Normal, ItemUseOnActorInventoryTransaction,
-                          "?handle@ItemUseOnActorInventoryTransaction@@UEBA?AW4InventoryTransactionError@@AEAVPlayer@@_N@Z",
-                          InventoryTransactionError, class Player& player, bool isSenderAuthority) {
-        auto rId = ll::memory::dAccess<ActorRuntimeID>(this, 104);
-        if (auto npc = NPC::getByRId(rId)) npc->onUse(&player);
+    LL_TYPE_INSTANCE_HOOK(OnUseNPCHook, HookPriority::Normal, ItemUseOnActorInventoryTransaction, &$handle,
+                          InventoryTransactionError, Player& player, bool isSenderAuthority) {
+        if (auto npc = NPC::getByRId(*mRuntimeId)) npc->onUse(&player);
         return origin(player, isSenderAuthority);
     }
 
-    AUTO_TI_HOOK(Tick, Level, tick, void) {
+    AUTO_TI_HOOK(Tick, Level, $tick, void) {
         origin();
-        NPC::tickAll(getCurrentTick().t);
+        NPC::tickAll(getCurrentTick().tickID);
     }
 
     unordered_set<string> blacklist = {"SpawnParticleEffectPacket", "LevelSoundEventPacket",
         "LevelChunkPacket", "SubChunkPacket", "ClientCacheMissResponsePacket", "MovePlayerPacket",
     "MoveActorDeltaPacket", "EmotePacket", "NetworkChunkPublisherUpdatePacket", "SetDisplayObjectivePacket",
     "RemoveObjectivePacket", "SetActorMotionPacket"};
-    LL_TYPE_INSTANCE_HOOK(TmpHook, HookPriority::Normal, PacketObserver,
-        "?packetSentTo@PacketObserver@@UEAAXAEBVNetworkIdentifier@@AEBVPacket@@I@Z",
+    LL_TYPE_INSTANCE_HOOK(TmpHook, HookPriority::Normal, PacketObserver, &$packetSentTo,
         void, NetworkIdentifier const& id, Packet const& pkt, uint size) {
         origin(id, pkt, size);
         if (!blacklist.contains(pkt.getName())) {

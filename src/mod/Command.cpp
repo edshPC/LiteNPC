@@ -4,7 +4,8 @@
 #include <ll/api/command/CommandRegistrar.h>
 #include <ll/api/command/runtime/ParamKind.h>
 #include <mc/network/packet/EmotePacket.h>
-#include <mc/world/level/Command.h>
+#include <ll/api/command/Command.h>
+#include <mc/server/commands/CommandOutput.h>
 
 #define EXECUTE_CMD(name)                                                                                              \
     void execute##name(const CommandOrigin& ori, CommandOutput& out, const name##Param& param)
@@ -50,7 +51,7 @@ EXECUTE_CMD(TestAnimation) {
     if (!emotionsConfig.emotions.contains(param.name.getText())) return out.error("Invalid emotion");
     Vec3 off = pl->getHeadLookVector();
     off.y = 0;
-    NPC* npc = NPC::create("testanimation", pl->getFeetPos() + off.normalized()*2,
+    NPC* npc = NPC::create("testanimation", pl->getFeetPos() + off.normalize()*2,
         pl->getDimensionId(), Vec2(0, pl->getRotation().y + 180));
     npc->emote(param.name.getText());
     Util::setTimeout([npc] { npc->remove(); }, 10000);

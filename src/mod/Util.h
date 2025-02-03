@@ -2,16 +2,18 @@
 
 #include "Global.h"
 
-#include "mc/deps/core/mce/Image.h"
+#include "mc/deps/core/container/Blob.h"
+#include "mc/deps/core/image/Image.h"
 
 namespace LiteNPC::Util {
+    using std::function;
 
     std::vector<std::string> split(std::string s, const std::string& delimiter = " ");
     std::unordered_set<Player*> getAllPlayers();
     std::string contatenateDialogue(const std::deque<std::string>& dialogue);
 
-    int setTimeout(std::function<void()>, int ms = 0);
-    int setInterval(std::function<void()>, int ms = 0, int count = 0);
+    int setTimeout(const function<void()>&, int ms = 0);
+    int setInterval(const function<void()>&, int ms = 0, int count = 0);
     void clearTask(int id);
 
     void makeUnique(SerializedSkin&);

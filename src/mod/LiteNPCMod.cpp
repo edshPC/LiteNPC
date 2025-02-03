@@ -15,10 +15,12 @@ void registerEvents();
 void registerCommands();
 void registerExports();
 
-static std::unique_ptr<LiteNPCMod> instance;
 static  std::unique_ptr<ll::data::KeyValueDB> db;
 
-LiteNPCMod& LiteNPCMod::getInstance() { return *instance; }
+LiteNPCMod& LiteNPCMod::getInstance() {
+    static LiteNPCMod instance;
+    return instance;
+}
 ll::data::KeyValueDB &LiteNPCMod::getDB() { return *db; }
 EmotionsConfig emotionsConfig;
 
@@ -43,4 +45,4 @@ bool LiteNPCMod::disable() {
 
 } // namespace LiteNPCMod
 
-LL_REGISTER_MOD(LiteNPC::LiteNPCMod, LiteNPC::instance);
+LL_REGISTER_MOD(LiteNPC::LiteNPCMod, LiteNPC::LiteNPCMod::getInstance());

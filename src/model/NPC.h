@@ -2,13 +2,10 @@
 
 #include <mc/network/ServerNetworkHandler.h>
 #include <mc/network/packet/Packet.h>
-#include <mc/entity/utilities/ActorFlags.h>
+#include <mc/world/actor/ActorFlags.h>
 
 #include "Global.h"
-#include "mc/math/Vec3.h"
-#include "mc/math/Vec2.h"
 #include "mc/world/actor/player/SerializedSkin.h"
-#include "mc/world/ActorRuntimeID.h"
 
 using namespace std;
 
@@ -88,7 +85,7 @@ namespace LiteNPC {
 		std::map<uint64, Action> actions;
 		std::unordered_set<ActorFlags> flags;
 		uint64 freeTick = 0;
-		ItemStack hand = ItemStack::EMPTY_ITEM;
+		ItemStack hand = ItemStack::EMPTY_ITEM();
 		bool isSitting = false;
 		struct Minecart {
 			ActorUniqueID actorId = LEVEL->getNewUniqueID();
