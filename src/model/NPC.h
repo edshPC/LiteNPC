@@ -7,6 +7,12 @@
 #include "Global.h"
 #include "mc/world/actor/player/SerializedSkin.h"
 
+#ifdef LITENPC_EXPORTS
+#define LNAPI __declspec(dllexport)
+#else
+#define LNAPI __declspec(dllimport)
+#endif
+
 using namespace std;
 
 namespace LiteNPC {
@@ -14,7 +20,7 @@ namespace LiteNPC {
 		unique_ptr<Packet> pkt;
 		function<void()> cb;
 	};
-	class NPC {
+	LNAPI class NPC {
 	public:
 		NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> cb) :
 			name(name),

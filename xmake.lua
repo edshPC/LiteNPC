@@ -17,6 +17,8 @@ add_requires(
 
 add_requires("levibuildscript")
 
+add_defines("LITENPC_EXPORTS")
+
 if not has_config("vs_runtime") then
     set_runtimes("MD")
 end
