@@ -76,7 +76,10 @@ namespace LiteNPC {
         NPC::tickAll(getCurrentTick().t);
     }
 
-    unordered_set<string> blacklist = {"SpawnParticleEffectPacket", "LevelSoundEventPacket", "LevelChunkPacket", "SubChunkPacket", "ClientCacheMissResponsePacket", "MovePlayerPacket"};
+    unordered_set<string> blacklist = {"SpawnParticleEffectPacket", "LevelSoundEventPacket",
+        "LevelChunkPacket", "SubChunkPacket", "ClientCacheMissResponsePacket", "MovePlayerPacket",
+    "MoveActorDeltaPacket", "EmotePacket", "NetworkChunkPublisherUpdatePacket", "SetDisplayObjectivePacket",
+    "RemoveObjectivePacket", "SetActorMotionPacket"};
     LL_TYPE_INSTANCE_HOOK(TmpHook, HookPriority::Normal, PacketObserver,
         "?packetSentTo@PacketObserver@@UEAAXAEBVNetworkIdentifier@@AEBVPacket@@I@Z",
         void, NetworkIdentifier const& id, Packet const& pkt, uint size) {
@@ -91,11 +94,17 @@ namespace LiteNPC {
                 auto lpkt = static_cast<SetActorDataPacket const*>(&pkt);
                 for (auto& data : lpkt->mPackedItems) {
                     LOGGER.info("type {}", (ushort)data->mId);
-                    if (data->mId == ActorDataIDs::Reserved0) {
+                    if (data->mId == ActorDataIDs::Reserved0 || data->mId == ActorDataIDs::Reserved092) {
                         int64 flg = data->getData<int64>().value();
                         stringstream ss;
                         ss << std::hex << flg;
                         LOGGER.info("flags {}", ss.str());
+                    }
+                    if (data->mId == ActorDataIDs::PlayerFlags) {
+                        int64 flg = data->getData<schar>().value();
+                        stringstream ss;
+                        ss << std::hex << flg;
+                        LOGGER.info("pl flags {}", ss.str());
                     }
                 }
             }

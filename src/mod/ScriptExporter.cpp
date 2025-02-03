@@ -63,6 +63,8 @@ namespace LiteNPC {
 		EXPORT_ONE_ARG(setHand, ItemType const& item, *item.ptr);
 		EXPORT_ONE_ARG(setSkin, string const& name, name);
 		EXPORT_ONE_ARG(sit, bool setSitting, setSitting);
+		EXPORT_ONE_ARG(sleep, bool setSleeping, setSleeping);
+		EXPORT_ONE_ARG(sneak, bool setSneaking, setSneaking);
 		EXPORT_ONE_ARG(eat, int64 times, times);
 		EXPORT_NO_ARGS(stop);
 

@@ -15,7 +15,6 @@ using namespace ll::command;
 namespace LiteNPC {
 
 struct SaveSkinParam { string name; };
-
 EXECUTE_CMD(SaveSkin) {
     if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
     auto pl = static_cast<Player*>(ori.getEntity());
@@ -25,8 +24,16 @@ EXECUTE_CMD(SaveSkin) {
     out.success();
 }
 
-struct SaveAnimationParam { string name; };
+struct RemoveSkinParam { string name; };
+EXECUTE_CMD(RemoveSkin) {
+    if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
+    auto pl = static_cast<Player*>(ori.getEntity());
+    if (NPC::getLoadedSkins().erase(param.name)) pl->sendMessage("Skin unloaded");
+    if (DB.has(param.name) && DB.del(param.name)) pl->sendMessage("Skin removed");
+    out.success();
+}
 
+struct SaveAnimationParam { string name; };
 extern unordered_map<Player*, string> waitingEmotions;
 EXECUTE_CMD(SaveAnimation) {
     if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
@@ -37,7 +44,6 @@ EXECUTE_CMD(SaveAnimation) {
 }
 
 struct TestAnimationParam { CommandRawText name; };
-
 EXECUTE_CMD(TestAnimation) {
     if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
     auto pl = static_cast<Player*>(ori.getEntity());
@@ -57,6 +63,9 @@ void registerCommands() {
 
     auto& cmd = registrar.getOrCreateCommand("saveskin", "Save your skin for npc", CommandPermissionLevel::GameDirectors);
     cmd.overload<SaveSkinParam>().required("name").execute(&executeSaveSkin);
+
+    auto& cmd0 = registrar.getOrCreateCommand("removeskin", "Unloads and removs skin from DB", CommandPermissionLevel::GameDirectors);
+    cmd0.overload<RemoveSkinParam>().required("name").execute(&executeRemoveSkin);
 
     auto& cmd1 = registrar.getOrCreateCommand("saveanimation", "Save your emotion for npc", CommandPermissionLevel::GameDirectors);
     cmd1.overload<SaveAnimationParam>().required("name").execute(&executeSaveAnimation);

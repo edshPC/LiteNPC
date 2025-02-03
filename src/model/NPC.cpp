@@ -65,13 +65,13 @@ namespace LiteNPC {
         pkt.mRot = rot;
         pkt.mYHeadRot = rot.y;
         pkt.mUnpack.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
-        pkt.mUnpack.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size));
-        BinaryStream bs;
-        NetworkItemStackDescriptor(hand).write(bs);
-        pkt.mCarriedItem.read(bs);
         pl->sendNetworkPacket(pkt);
 
-        Util::setTimeout([this, pl]() { updateSkin(pl); });
+        Util::setTimeout([this, pl] {
+            updateSkin(pl);
+            updateActorData();
+            setHand(hand);
+        });
         if (isSitting) {
             sit(false);
             sit();
@@ -104,7 +104,13 @@ namespace LiteNPC {
         pkt->mId = runtimeId;
         pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Name, name)); // name
         pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size)); // size
-        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved0, isEating ? 0x10ll : 0ll)); // flags
+        int64 flag = 0, flag_extended = 0;
+        for (auto f : flags) {
+            flag |= 1ll << static_cast<int>(f);
+            flag_extended |= 1ll << static_cast<int>(f) - 64;
+        }
+        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved0, flag));
+        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved092, flag_extended));
         newAction(move(pkt));
     }
 
@@ -189,9 +195,9 @@ namespace LiteNPC {
     }
 
     void NPC::eat(int64 time) {
-        isEating = true;
+        flags.insert(ActorFlags::Usingitem);
         updateActorData();
-        isEating = false;
+        flags.erase(ActorFlags::Usingitem);
         freeTick += time;
         updateActorData();
     }
@@ -253,6 +259,18 @@ namespace LiteNPC {
             updatePosition();
             isSitting = false;
         }
+    }
+
+    void NPC::sleep(bool setSleeping) {
+        if (setSleeping) flags.insert(ActorFlags::Sleeping);
+        else flags.erase(ActorFlags::Sleeping);
+        updateActorData();
+    }
+
+    void NPC::sneak(bool setSneaking) {
+        if (setSneaking) flags.insert(ActorFlags::Sneaking);
+        else flags.erase(ActorFlags::Sneaking);
+        updateActorData();
     }
 
     void NPC::finishDialogue() {

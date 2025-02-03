@@ -2,7 +2,7 @@
 
 #include <mc/network/ServerNetworkHandler.h>
 #include <mc/network/packet/Packet.h>
-#include <mc/world/actor/player/PlayerActionType.h>
+#include <mc/entity/utilities/ActorFlags.h>
 
 #include "Global.h"
 #include "mc/math/Vec3.h"
@@ -54,6 +54,8 @@ namespace LiteNPC {
 		void say(const string &text, bool saveHistory = true);
 		void delay(uint64 ticks);
 		void sit(bool setSitting = true);
+		void sleep(bool setSleeping = true);
+		void sneak(bool setSneaking = true);
 		void finishDialogue();
 		void playSound(const string& name, float volume = 1, float pitch = 1);
 		void stop();
@@ -84,10 +86,10 @@ namespace LiteNPC {
 		const mce::UUID uuid = mce::UUID::random();
 		function<void(Player* pl)> callback;
 		std::map<uint64, Action> actions;
+		std::unordered_set<ActorFlags> flags;
 		uint64 freeTick = 0;
 		ItemStack hand = ItemStack::EMPTY_ITEM;
 		bool isSitting = false;
-		bool isEating = false;
 		struct Minecart {
 			ActorUniqueID actorId = LEVEL->getNewUniqueID();
 			ActorRuntimeID runtimeId = LEVEL->getNextRuntimeID();

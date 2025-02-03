@@ -4,7 +4,7 @@ let plugin = "default", serverStarted = false, queue = [], customPrefix = "";
 
 const API = {}, API_funcs = ["create", "remove", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
 	"lookAt", "lookRot", "swing", "interactBlock", "say", "delay", "setHand", "setSkin", "sit", "rename", "resize", "eat",
-	"finishDialogue", "openDialogueHistory", "stop", "playSound", "sendPlaySound"];
+	"finishDialogue", "openDialogueHistory", "stop", "playSound", "sendPlaySound", "sleep", "sneak"];
 API_funcs.forEach(f => API[f] = ll.imports(NAMESPACE, f));
 
 function parsePositionArgs(args, Type = IntPos) {
@@ -52,7 +52,9 @@ export default class LiteNPC {
 	setHand(item) { API.setHand(this.id, item); }
 	setSkin(name) { API.setSkin(this.id, name); }
 	sit(setSitting = true) { API.sit(this.id, setSitting); }
-	rename(name) { API.rename(this.id, name); }
+	sleep(setSleeping = true) { API.sleep(this.id, setSleeping); }
+	sneak(setSneaking = true) { API.sneak(this.id, setSneaking); }
+	rename(name) { API.rename(this.id, name); this.name = name; }
 	resize(size) { API.resize(this.id, size); }
 	eat(times = 30) { API.eat(this.id, times); }
 	setPrefix(prefix) { this.prefix = prefix; }
@@ -73,7 +75,7 @@ export default class LiteNPC {
 		return new Promise(resolve => {
 			function callback(pl, id) {
 				if (id === undefined || choices[id] === null) return pl.sendForm(fm, callback);
-				resolve([id, choices[id]]);
+				resolve([id, choices[id].replace(/ ?\[.*]/g, "")]);
 			}
 			pl.sendForm(fm, callback);
 		});
