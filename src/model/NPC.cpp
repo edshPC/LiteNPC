@@ -30,6 +30,9 @@ namespace LiteNPC {
     deque<string> current_dialogue;
     deque<deque<string>> dialog_history = {{}};
 
+    NPC::NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player *)> cb) :
+            name(name), pos(pos), dim(dim), rot(rot), skinName(skin), callback(cb) {}
+
     void NPC::remove(bool instant) {
         if (instant) freeTick = 0;
         newAction(make_unique<RemoveActorPacket>(actorId));
