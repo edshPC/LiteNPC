@@ -12,8 +12,8 @@ namespace LiteNPC::Util {
     std::unordered_set<Player*> getAllPlayers();
     std::string contatenateDialogue(const std::deque<std::string>& dialogue);
 
-    int setTimeout(const function<void()>&, int ms = 0);
-    int setInterval(const function<void()>&, int ms = 0, int count = 0);
+    int setTimeout(const function<void()>&, int ms = 50);
+    int setInterval(const function<void()>&, int ms = 50, int count = 0);
     void clearTask(int id);
 
     void makeUnique(SerializedSkin&);

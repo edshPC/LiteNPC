@@ -3,6 +3,7 @@
 #include <mc/network/ServerNetworkHandler.h>
 #include <mc/network/packet/Packet.h>
 #include <mc/world/actor/ActorFlags.h>
+#include <mc/world/actor/DataItem.h>
 
 #include "Global.h"
 #include "mc/world/actor/player/SerializedSkin.h"
@@ -29,6 +30,7 @@ namespace LiteNPC {
 		void updateSkin(Player* pl = nullptr);
 		void updatePosition();
 		void updateActorData();
+		void putActorData(vector<unique_ptr<DataItem>>& data);
 		LNAPI void remove(bool instant = false);
 		void newAction(unique_ptr<Packet> pkt, uint64 delay = 1, function<void()> cb = {});
 		void tick(uint64 tick);

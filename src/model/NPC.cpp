@@ -68,12 +68,11 @@ namespace LiteNPC {
         pkt.mPos = pos;
         pkt.mRot = rot;
         pkt.mYHeadRot = rot.y;
-        pkt.mUnpack->emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
+        putActorData(pkt.mUnpack);
         pl->sendNetworkPacket(pkt);
 
         Util::setTimeout([this, pl] {
             updateSkin(pl);
-            updateActorData();
             setHand(hand);
         });
         if (isSitting) {
@@ -112,16 +111,23 @@ namespace LiteNPC {
     void NPC::updateActorData() {
         auto pkt = make_unique<SetActorDataPacket>();
         pkt->mId = runtimeId;
-        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Name, name)); // name
-        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size)); // size
+        putActorData(pkt->mPackedItems);
+        pkt->mTick = PlayerInputTick(LEVEL->getCurrentTick().tickID);
+        newAction(move(pkt));
+    }
+
+    void NPC::putActorData(vector<unique_ptr<DataItem>> &data) {
+        data.clear();
+        data.emplace_back(DataItem::create(ActorDataIDs::Name, name)); // name
+        data.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size)); // size
+        data.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
         int64 flag = 0, flag_extended = 0;
         for (auto f : flags) {
             flag |= 1ll << static_cast<int>(f);
             flag_extended |= 1ll << static_cast<int>(f) - 64;
         }
-        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved0, flag));
-        pkt->mPackedItems.emplace_back(DataItem::create(ActorDataIDs::Reserved092, flag_extended));
-        newAction(move(pkt));
+        data.emplace_back(DataItem::create(ActorDataIDs::Reserved0, flag));
+        data.emplace_back(DataItem::create(ActorDataIDs::Reserved092, flag_extended));
     }
 
     void NPC::updateDialogue() {
