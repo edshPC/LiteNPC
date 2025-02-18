@@ -4,9 +4,10 @@
 #include <mc/network/packet/Packet.h>
 #include <mc/world/actor/ActorFlags.h>
 #include <mc/world/actor/DataItem.h>
-
-#include "Global.h"
-#include "mc/world/actor/player/SerializedSkin.h"
+#include <mc/world/actor/player/SerializedSkin.h>
+#include <mc/common/ActorRuntimeID.h>
+#include <mc/common/ActorUniqueID.h>
+#include <mc/world/actor/player/Player.h>
 
 #ifdef LITENPC_EXPORTS
 #define LNAPI __declspec(dllexport)
@@ -23,7 +24,7 @@ namespace LiteNPC {
 	};
 	class NPC {
 	public:
-		NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> cb);
+		LNAPI NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> cb);
 
 		void onUse(Player* pl);
 		void spawn(Player* pl);
@@ -32,7 +33,7 @@ namespace LiteNPC {
 		void updateActorData();
 		void putActorData(vector<unique_ptr<DataItem>>& data);
 		LNAPI void remove(bool instant = false);
-		void newAction(unique_ptr<Packet> pkt, uint64 delay = 1, function<void()> cb = {});
+		LNAPI void newAction(unique_ptr<Packet> pkt, uint64 delay = 1, function<void()> cb = {});
 		void tick(uint64 tick);
 		LNAPI void setCallback(function<void(Player*)> cb);
 
@@ -60,12 +61,12 @@ namespace LiteNPC {
 		LNAPI void stop();
 
 		LNAPI static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = {});
-		static void spawnAll(Player* pl);
-		static NPC* getByRId(unsigned long long rId);
+		LNAPI static void spawnAll(Player* pl);
+		LNAPI static NPC* getByRId(unsigned long long rId);
 		LNAPI static vector<NPC*> getAll();
-		static unordered_map<string, SerializedSkin>& getLoadedSkins();
-		static void saveSkin(string name, SerializedSkin& skin);
-		static void saveEmotion(string name, string emotionUuid);
+		LNAPI static unordered_map<string, SerializedSkin>& getLoadedSkins();
+		LNAPI static void saveSkin(string name, SerializedSkin& skin);
+		LNAPI static void saveEmotion(string name, string emotionUuid);
 		static void init();
 		static void tickAll(uint64 tick);
 		static void updateDialogue();
@@ -79,19 +80,19 @@ namespace LiteNPC {
 		Vec2 rot;
 		int dim;
 		string skinName;
-		float size = 1;
-		const ActorUniqueID actorId = LEVEL->getNewUniqueID();
-		const ActorRuntimeID runtimeId = LEVEL->getNextRuntimeID();
-		const mce::UUID uuid = mce::UUID::random();
+		float size;
+		const ActorUniqueID actorId;
+		const ActorRuntimeID runtimeId;
+		const mce::UUID uuid;
 		function<void(Player* pl)> callback;
 		std::map<uint64, Action> actions;
 		std::unordered_set<ActorFlags> flags;
-		uint64 freeTick = 0;
-		ItemStack hand = ItemStack::EMPTY_ITEM();
-		bool isSitting = false;
+		uint64 freeTick;
+		ItemStack hand;
+		bool isSitting;
 		struct Minecart {
-			ActorUniqueID actorId = LEVEL->getNewUniqueID();
-			ActorRuntimeID runtimeId = LEVEL->getNextRuntimeID();
+			ActorUniqueID actorId;
+			ActorRuntimeID runtimeId;
 		} minecart;
 	};
 

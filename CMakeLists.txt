@@ -16,7 +16,7 @@ target_include_directories(LiteNPC PRIVATE
     src
 )
 target_include_directories(LiteNPC SYSTEM PRIVATE
-    C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/1.0.1/8a2ce0d166104d6c8b7c173c9537d51c/include
+    C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/1.0.1/0c60ce77dbe34c6a92c2718bf0205f88/include
     C:/Users/edshh/AppData/Local/.xmake/packages/e/entt/v3.14.0/3822e64c6ba14bb99ba35d14302954bf/include
     C:/Users/edshh/AppData/Local/.xmake/packages/e/expected-lite/v0.8.0/36ca3aab48a04473a0b2d34e01875b34/include
     C:/Users/edshh/AppData/Local/.xmake/packages/f/fmt/10.2.1/2eeacf73125546e1ae5a2a161567d6e6/include
@@ -39,11 +39,11 @@ target_include_directories(LiteNPC SYSTEM PRIVATE
     C:/Users/edshh/AppData/Local/.xmake/packages/l/lodepng/@default/3c332be551f6485e8d17e1830ee49789/include
 )
 target_compile_definitions(LiteNPC PRIVATE
+    LITENPC_EXPORTS
     NOMINMAX
     UNICODE
     ENTT_PACKED_PAGE=128
     ENTT_SPARSE_PAGE=2048
-    ENTT_NO_MIXIN
 )
 target_compile_options(LiteNPC PRIVATE
     $<$<COMPILE_LANGUAGE:C>:/EHa>
@@ -67,6 +67,7 @@ target_compile_options(LiteNPC PRIVATE
     $<$<COMPILE_LANGUAGE:C>:-DNDEBUG>
     $<$<COMPILE_LANGUAGE:CXX>:-DNDEBUG>
     $<$<COMPILE_LANGUAGE:CXX>:/utf-8>
+    $<$<COMPILE_LANGUAGE:CUDA>:-DNDEBUG>
 )
 string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set_target_properties(LiteNPC PROPERTIES CXX_EXTENSIONS OFF)
@@ -95,7 +96,7 @@ target_link_libraries(LiteNPC PRIVATE
     lodepng
 )
 target_link_directories(LiteNPC PRIVATE
-    C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/1.0.1/8a2ce0d166104d6c8b7c173c9537d51c/lib
+    C:/Users/edshh/AppData/Local/.xmake/packages/l/levilamina/1.0.1/0c60ce77dbe34c6a92c2718bf0205f88/lib
     C:/Users/edshh/AppData/Local/.xmake/packages/f/fmt/10.2.1/2eeacf73125546e1ae5a2a161567d6e6/lib
     C:/Users/edshh/AppData/Local/.xmake/packages/l/leveldb/1.23/2532d000dc9d47cbb618c80ba0e6d806/lib
     C:/Users/edshh/AppData/Local/.xmake/packages/s/snappy/1.2.1/95042f33987c4d339f7e96106057275f/lib
@@ -113,6 +114,6 @@ target_sources(LiteNPC PRIVATE
     src/mod/MemoryOperators.cpp
     src/mod/ScriptExporter.cpp
     src/mod/Util.cpp
-    src/model/NPC.cpp
+    src/model/LiteNPC.cpp
 )
 

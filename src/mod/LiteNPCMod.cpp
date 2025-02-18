@@ -1,7 +1,6 @@
 #include "mod/LiteNPCMod.h"
 
 #include <memory>
-#include <model/NPC.h>
 
 #include "ll/api/mod/RegisterHelper.h"
 #include "Global.h"

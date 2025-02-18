@@ -1,4 +1,5 @@
-#include "NPC.h"
+#include "LiteNPC.h"
+#include "Global.h"
 
 #include <ll/api/chrono/GameChrono.h>
 
@@ -31,7 +32,10 @@ namespace LiteNPC {
     deque<deque<string>> dialog_history = {{}};
 
     NPC::NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player *)> cb) :
-            name(name), pos(pos), dim(dim), rot(rot), skinName(skin), callback(cb) {}
+            name(name), pos(pos), dim(dim), rot(rot), skinName(skin), callback(cb),
+            actorId(LEVEL->getNewUniqueID()), runtimeId(LEVEL->getNextRuntimeID()), uuid(mce::UUID::random()),
+            minecart(LEVEL->getNewUniqueID(), LEVEL->getNextRuntimeID()),
+            size(1), freeTick(0), hand(ItemStack::EMPTY_ITEM()), isSitting(false) {}
 
     void NPC::remove(bool instant) {
         if (instant) freeTick = 0;

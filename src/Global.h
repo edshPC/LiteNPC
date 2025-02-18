@@ -19,7 +19,7 @@
 #define LEVEL ll::service::getLevel()
 #define DB LiteNPCMod::getDB()
 
-#include "model/NPC.h"
+#include "model/LiteNPC.h"
 #include "mod/Util.h"
 #include "ll/api/Config.h"
 
