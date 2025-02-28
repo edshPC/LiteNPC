@@ -59,7 +59,8 @@ namespace LiteNPC {
         }
     }
 
-    AUTO_TI_HOOK(PlayerChangeDimension, Level, $requestPlayerChangeDimension, void, Player& pl, ChangeDimensionRequest&&) {
+    AUTO_TI_HOOK(PlayerChangeDimension, Level, $requestPlayerChangeDimension, void, Player& pl, ChangeDimensionRequest&& req) {
+        origin(pl, std::move(req));
         Util::setTimeout([&pl] { NPC::spawnAll(&pl); });
     }
 
