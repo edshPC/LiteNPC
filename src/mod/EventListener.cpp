@@ -50,11 +50,12 @@ namespace LiteNPC {
 
     AUTO_TI_HOOK(ChangeSkin, ServerNetworkHandler, $handle, void, NetworkIdentifier const& source,
                  PlayerSkinPacket const& pkt) {
-        auto pl = _getServerPlayer(source, pkt.mClientSubId);
+        auto pl = ll::memory::dAccess<ServerNetworkHandler>(this, -16).
+            _getServerPlayer(source, pkt.mClientSubId);
         if (pl) {
-            auto& skin = pkt.mSkin;
-            pl->updateSkin(skin, 1);
-            pkt.sendTo(*static_cast<Actor*>(pl));
+            auto& skin = *pkt.mSkin;
+            pl->updateSkin(skin, static_cast<int>(pkt.mClientSubId));
+            pkt.sendTo(*pl, std::nullopt);
             pl->sendMessage("§eSkin changed");
         }
     }
