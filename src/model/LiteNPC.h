@@ -52,6 +52,7 @@ namespace LiteNPC {
 		LNAPI void eat(int64 time = 7);
 		LNAPI void interactBlock(BlockPos bp);
 		LNAPI void say(const string &text, bool saveHistory = true);
+		LNAPI void sayTo(Player *pl, const string &text);
 		LNAPI void delay(uint64 ticks);
 		LNAPI void sit(bool setSitting = true);
 		LNAPI void sleep(bool setSleeping = true);

@@ -52,8 +52,7 @@ target("LiteNPC") -- Change this to your mod name.
     --     add_includedirs("src-client")
     --     add_files("src-client/**.cpp")
     -- end
-    --after_build(function(target)
-    --    local outputdir = path.join(os.projectdir(), "bin", target:name())
-    --    os.cp(outputdir, "D:\\mcpe\\bedrock-oreshop-1.21.50-1.0.0\\plugins_tocopy\\")
-    --    cprint("Mod copied to server")
-    --end)
+    after_build(function(target)
+       local outputdir = path.join(os.projectdir(), "bin", target:name())
+       os.cp(path.join(os.projectdir(), "resources/*"), outputdir)
+    end)

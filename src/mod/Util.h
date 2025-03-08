@@ -22,5 +22,6 @@ namespace LiteNPC::Util {
     void loadSkinPacks();
 
     void sendPlaySound(Vec3 pos, const std::string& name, float volume = 1, float pitch = 1);
+    std::unordered_set<Player*> getPlayersNear(Vec3 pos, float distance);
 
 } // namespace OreShop::Util

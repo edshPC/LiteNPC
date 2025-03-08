@@ -7,7 +7,7 @@
 #include "mc/network/packet/PlayerSkinPacket.h"
 #include "mc/network/packet/RemoveActorPacket.h"
 #include "mc/network/packet/SetActorDataPacket.h"
-#include "mc/network/packet/MovePlayerPacket.h""
+#include "mc/network/packet/MovePlayerPacket.h"
 #include "mc/network/packet/AnimatePacket.h"
 #include "mc/network/packet/EmotePacket.h"
 #include "mc/network/packet/AddActorPacket.h"
@@ -78,11 +78,11 @@ namespace LiteNPC {
         Util::setTimeout([this, pl] {
             updateSkin(pl);
             setHand(hand);
-        });
-        if (isSitting) {
-            sit(false);
-            sit();
-        }
+            if (isSitting) {
+                sit(false);
+                sit();
+            }
+        }, 100);
     }
 
     void NPC::updateSkin(Player *pl) {
@@ -250,6 +250,15 @@ namespace LiteNPC {
         }
     }
 
+    void NPC::sayTo(Player *pl, const string &text) {
+        newAction(nullptr, 1, [this, text, pl] {
+            TextPacket pkt;
+            pkt.mType = TextPacketType::Popup;
+            pkt.mMessage = text + "\n§r";
+            pl->sendNetworkPacket(pkt);
+        });
+    }
+
     void NPC::delay(uint64 ticks) { newAction(nullptr, ticks); }
 
     void NPC::sit(bool setSitting) {
@@ -260,7 +269,7 @@ namespace LiteNPC {
             pkt->mRuntimeId = minecart.runtimeId;
             pos.y -= .5f;
             pkt->mPos = pos;
-            pkt->mUnpack->emplace_back(DataItem::create(ActorDataIDs::Reserved038, .0001f));
+            pkt->mUnpack->emplace_back(DataItem::create(ActorDataIDs::Reserved038, .001f));
             ActorLink link;
             link.type = ActorLinkType::Passenger;
             link.A = minecart.actorId;

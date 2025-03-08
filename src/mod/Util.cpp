@@ -180,6 +180,15 @@ namespace LiteNPC::Util {
         pkt.sendToClients();
     }
 
+    std::unordered_set<Player*> getPlayersNear(Vec3 pos, float distance) {
+        std::unordered_set<Player*> player_list;
+        LEVEL->forEachPlayer([&](Player& pl) {
+            if (pl.getFeetPos().distanceTo(pos) < distance) player_list.insert(&pl);
+            return true;
+        });
+        return player_list;
+    }
+
 } // namespace LiteNPC::Util
 
 // namespace OreShop

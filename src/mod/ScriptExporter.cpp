@@ -58,6 +58,7 @@ namespace LiteNPC {
 		EXPORT_NO_ARGS(swing);
 		EXPORT_ONE_ARG(interactBlock, BlockPosType const& pos, pos.pos);
 		EXPORT_TWO_ARGS(say, string const& text, text, bool saveHistory, saveHistory);
+		EXPORT_TWO_ARGS(sayTo, Player* pl, pl, string const& text, text);
 		EXPORT_NO_ARGS(finishDialogue);
 		EXPORT_ONE_ARG(delay, int64 delay, delay);
 		EXPORT_ONE_ARG(setHand, ItemType const& item, *item.ptr);

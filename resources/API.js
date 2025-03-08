@@ -1,9 +1,9 @@
 const NAMESPACE = "LiteNPC";
 
-let plugin = "default", serverStarted = false, queue = [], customPrefix = "";
+let plugin = "default", serverStarted = false, queue = [], customPrefix = "", emptyItem;
 
 const API = {}, API_funcs = ["create", "remove", "clear", "setCallback", "emote", "moveTo", "moveToBlock",
-	"lookAt", "lookRot", "swing", "interactBlock", "say", "delay", "setHand", "setSkin", "sit", "rename", "resize", "eat",
+	"lookAt", "lookRot", "swing", "interactBlock", "say", "sayTo", "delay", "setHand", "setSkin", "sit", "rename", "resize", "eat",
 	"finishDialogue", "openDialogueHistory", "stop", "playSound", "sendPlaySound", "sleep", "sneak"];
 API_funcs.forEach(f => API[f] = ll.imports(NAMESPACE, f));
 
@@ -31,6 +31,7 @@ export default class LiteNPC {
 	setCallback(callback) {
 		ll.exports(pl => { if(callback) callback(pl, this); }, NAMESPACE, `NPC_${this.id}_${this.cbId}`);
 		API.setCallback(this.id, this.cbId++);
+		return this;
 	}
 
 	waitCallback(callback) {
@@ -41,30 +42,37 @@ export default class LiteNPC {
 		let [pos, speed] = parsePositionArgs(args);
 		if (pos instanceof IntPos) API.moveToBlock(this.id, pos, speed || 1);
 		else API.moveTo(this.id, pos, speed || 1);
+		return this;
 	}
 
 	remove() { API.remove(this.id); }
-	emote(name) { API.emote(this.id, name);	}
-	lookAt(...args) { API.lookAt(this.id, parsePositionArgs(args, FloatPos)[0]); }
-	lookRot(x, y) { API.lookRot(this.id, x, y); }
-	swing() { API.swing(this.id); }
-	interactBlock(...args) { API.interactBlock(this.id, parsePositionArgs(args)[0]); }
-	setHand(item) { API.setHand(this.id, item); }
-	setSkin(name) { API.setSkin(this.id, name); }
-	sit(setSitting = true) { API.sit(this.id, setSitting); }
-	sleep(setSleeping = true) { API.sleep(this.id, setSleeping); }
-	sneak(setSneaking = true) { API.sneak(this.id, setSneaking); }
-	rename(name) { API.rename(this.id, name); this.name = name; }
-	resize(size) { API.resize(this.id, size); }
-	eat(times = 30) { API.eat(this.id, times); }
-	setPrefix(prefix) { this.prefix = prefix; }
-	finishDialogue() { API.finishDialogue(this.id); }
+	emote(name) { API.emote(this.id, name); return this; }
+	lookAt(...args) { API.lookAt(this.id, parsePositionArgs(args, FloatPos)[0]); return this; }
+	lookRot(x, y) { API.lookRot(this.id, x, y); return this; }
+	swing() { API.swing(this.id); return this; }
+	interactBlock(...args) { API.interactBlock(this.id, parsePositionArgs(args)[0]); return this; }
+	setHand(item) { API.setHand(this.id, item || emptyItem); return this; }
+	setSkin(name) { API.setSkin(this.id, name); return this; }
+	sit(setSitting = true) { API.sit(this.id, setSitting); return this; }
+	sleep(setSleeping = true) { API.sleep(this.id, setSleeping); return this; }
+	sneak(setSneaking = true) { API.sneak(this.id, setSneaking); return this; }
+	rename(name) { API.rename(this.id, name); this.name = name; return this; }
+	resize(size) { API.resize(this.id, size); return this; }
+	eat(times = 30) { API.eat(this.id, times); return this; }
+	setPrefix(prefix) { this.prefix = prefix; return this; }
+	finishDialogue() { API.finishDialogue(this.id); return this; }
 	stop() { API.stop(this.id); }
 
 	say(msg, name, saveHistory = true) {
 		msg = `${name ? customPrefix : this.prefix}§6[${name || this.name}§6] §f${msg}`;
 		API.say(this.id, msg, saveHistory);
 		if (saveHistory) this.last_msg = msg;
+		return this;
+	}
+	sayTo(pl, msg, name) {
+		msg = `${name ? customPrefix : this.prefix}§6[${name || this.name}§6] §f${msg}`;
+		API.sayTo(this.id, pl, msg);
+		return this;
 	}
 
 	decision(pl, choices, name = this.name) {
@@ -83,9 +91,10 @@ export default class LiteNPC {
 
 	delay(ticks) {
 		API.delay(this.id, ticks);
+		return this;
 	}
 
-	playSound(name, volume = 1, pitch = 1) { API.playSound(name, volume, pitch); }
+	playSound(name, volume = 1, pitch = 1) { API.playSound(name, volume, pitch); return this; }
 	static sendPlaySound(...args) {
 		let [pos, name, volume, pitch] = parsePositionArgs(args);
 		API.sendPlaySound(pos, name, volume || 1, pitch || 1);
@@ -117,6 +126,7 @@ mc.listen("onServerStarted", () => {
 	logger.info(`Plugin ${plugin} loaded`);
 	logger.setTitle(plugin);
 
+	emptyItem = mc.newItem("minecraft:stone", 0);
 	API.clear(plugin);
 	serverStarted = true;
 	queue.forEach(npc => npc.load());
