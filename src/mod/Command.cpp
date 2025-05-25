@@ -19,10 +19,9 @@ struct SaveSkinParam { string name; };
 EXECUTE_CMD(SaveSkin) {
     if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
     auto pl = static_cast<Player*>(ori.getEntity());
-    auto& skin = pl->getSkin();
-    NPC::saveSkin(param.name, skin);
+    NPC::saveSkin(param.name, *pl->mSkin);
     pl->sendMessage("Skin saved");
-    out.success();
+    out.mSuccessCount++;
 }
 
 struct RemoveSkinParam { string name; };
@@ -31,7 +30,7 @@ EXECUTE_CMD(RemoveSkin) {
     auto pl = static_cast<Player*>(ori.getEntity());
     if (NPC::getLoadedSkins().erase(param.name)) pl->sendMessage("Skin unloaded");
     if (DB.has(param.name) && DB.del(param.name)) pl->sendMessage("Skin removed");
-    out.success();
+    out.mSuccessCount++;
 }
 
 struct SaveAnimationParam { string name; };
@@ -41,21 +40,21 @@ EXECUTE_CMD(SaveAnimation) {
     auto pl = static_cast<Player*>(ori.getEntity());
     waitingEmotions[pl] = param.name;
     pl->sendMessage("Waiting for emotion");
-    out.success();
+    out.mSuccessCount++;
 }
 
 struct TestAnimationParam { CommandRawText name; };
 EXECUTE_CMD(TestAnimation) {
     if (ori.getOriginType() != CommandOriginType::Player) return out.error("Player only");
     auto pl = static_cast<Player*>(ori.getEntity());
-    if (!emotionsConfig.emotions.contains(param.name.getText())) return out.error("Invalid emotion");
+    if (!emotionsConfig.emotions.contains(param.name.mText)) return out.error("Invalid emotion");
     Vec3 off = pl->getHeadLookVector();
     off.y = 0;
     NPC* npc = NPC::create("testanimation", pl->getFeetPos() + off.normalize()*2,
-        pl->getDimensionId(), Vec2(0, pl->getRotation().y + 180));
-    npc->emote(param.name.getText());
+        pl->getDimensionId(), Vec2(0, pl->getYBodyRotation() + 180));
+    npc->emote(param.name.mText);
     Util::setTimeout([npc] { npc->remove(); }, 10000);
-    out.success();
+    out.mSuccessCount++;
 }
 
 void registerCommands() {

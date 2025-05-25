@@ -5,8 +5,8 @@
 #include <mc/world/actor/ActorFlags.h>
 #include <mc/world/actor/DataItem.h>
 #include <mc/world/actor/player/SerializedSkin.h>
-#include <mc/common/ActorRuntimeID.h>
-#include <mc/common/ActorUniqueID.h>
+#include <mc/legacy/ActorRuntimeID.h>
+#include <mc/legacy/ActorUniqueID.h>
 #include <mc/world/actor/player/Player.h>
 
 #ifdef LITENPC_EXPORTS

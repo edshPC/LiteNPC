@@ -12,6 +12,7 @@
 
 #include "mc/network/ServerNetworkHandler.h"
 #include "mc/world/inventory/transaction/ItemUseOnActorInventoryTransaction.h"
+#include "mc/world/actor/DataItem.h"
 #include "mc/network/PacketObserver.h"
 #include "mc/network/packet/SetActorLinkPacket.h"
 
@@ -93,14 +94,14 @@ namespace LiteNPC {
             if (pkt.getName() == "SetActorDataPacket") {
                 auto lpkt = static_cast<SetActorDataPacket const*>(&pkt);
                 for (auto& data : lpkt->mPackedItems) {
-                    LOGGER.info("type {}", (ushort)data->mId);
-                    if (data->mId == ActorDataIDs::Reserved0 || data->mId == ActorDataIDs::Reserved092) {
+                    LOGGER.info("type {}", data->getId());
+                    if (data->getId() == (uchar)ActorDataIDs::Reserved0 || data->getId() == (uchar)ActorDataIDs::Reserved092) {
                         int64 flg = data->getData<int64>().value();
                         stringstream ss;
                         ss << std::hex << flg;
                         LOGGER.info("flags {}", ss.str());
                     }
-                    if (data->mId == ActorDataIDs::PlayerFlags) {
+                    if (data->getId() == (uchar)ActorDataIDs::PlayerFlags) {
                         int64 flg = data->getData<schar>().value();
                         stringstream ss;
                         ss << std::hex << flg;

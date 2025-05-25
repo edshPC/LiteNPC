@@ -17,6 +17,7 @@
 #include "mc/network/packet/PlaySoundPacket.h"
 #include "mc/deps/core/utility/BinaryStream.h"
 #include "mc/world/actor/ActorLink.h"
+#include "mc/world/actor/SynchedActorDataEntityWrapper.h"
 #include "mc/world/level/dimension/Dimension.h"
 #include "mc/world/level/BlockSource.h"
 #include "mc/world/level/block/Block.h"
@@ -39,7 +40,9 @@ namespace LiteNPC {
 
     void NPC::remove(bool instant) {
         if (instant) freeTick = 0;
-        newAction(make_unique<RemoveActorPacket>(actorId));
+        auto pkt = make_unique<RemoveActorPacket>();
+        pkt->mEntityId = actorId;
+        newAction(move(pkt));
         int delay = freeTick + 1 - LEVEL->getCurrentTick().tickID;
         Util::setTimeout([this] {
             loadedNPC.erase(runtimeId);
@@ -113,10 +116,16 @@ namespace LiteNPC {
     }
 
     void NPC::updateActorData() {
-        auto pkt = make_unique<SetActorDataPacket>();
-        pkt->mId = runtimeId;
+        auto act = Util::getRandomActor();
+        if (!act) return;
+        auto pkt = make_unique<SetActorDataPacket>(
+            runtimeId,
+            act->mEntityData,
+            nullptr,
+            LEVEL->getCurrentTick().tickID,
+            false
+        );
         putActorData(pkt->mPackedItems);
-        pkt->mTick = PlayerInputTick(LEVEL->getCurrentTick().tickID);
         newAction(move(pkt));
     }
 
@@ -187,7 +196,7 @@ namespace LiteNPC {
     void NPC::moveToBlock(BlockPos pos, float speed) { moveTo(pos, speed); }
 
     void NPC::lookAt(Vec3 pos) {
-        Vec2 dest = Vec3::rotationFromDirection(pos - this->pos - eyeHeight);
+        Vec2 dest = Util::rotationFromDirection(pos - this->pos - eyeHeight);
         lookRot(dest);
     }
 
@@ -225,11 +234,11 @@ namespace LiteNPC {
     void NPC::interactBlock(BlockPos bp) {
         lookAt(bp.center());
         newAction(nullptr, 1, [this, bp] {
-            auto dim = LEVEL->getDimension(this->dim).get();
+            auto dim = LEVEL->getDimension(this->dim).lock();
             if (!dim) return;
             auto& bs = dim->getBlockSourceFromMainChunkSource();
             if (auto bl = &const_cast<Block&>(bs.getBlock(bp))) {
-                bl->onHitByActivatingAttack(bs, bp, nullptr);
+                 bl->getLegacyBlock()._onHitByActivatingAttack(bs, bp, nullptr);
             }
         });
         swing();
@@ -274,17 +283,19 @@ namespace LiteNPC {
             link.type = ActorLinkType::Passenger;
             link.A = minecart.actorId;
             link.B = actorId;
-            pkt->mLinks->emplace_back(link);
+            pkt->mLinks->push_back(move(link));
             newAction(move(pkt));
             isSitting = true;
         } else if (!setSitting && isSitting) {
             pos.y += .5f;
-            ActorLink link;
-            link.type = ActorLinkType::None;
-            link.A = minecart.actorId;
-            link.B = actorId;
-            newAction(make_unique<SetActorLinkPacket>(link));
-            newAction(make_unique<RemoveActorPacket>(minecart.actorId));
+            auto link_pkt = make_unique<SetActorLinkPacket>();
+            link_pkt->mLink->type = ActorLinkType::None;
+            link_pkt->mLink->A = minecart.actorId;
+            link_pkt->mLink->B = actorId;
+            newAction(move(link_pkt));
+            auto rm_pkt = make_unique<RemoveActorPacket>();
+            rm_pkt->mEntityId = minecart.actorId;
+            newAction(move(rm_pkt));
             updatePosition();
             isSitting = false;
         }
@@ -362,7 +373,7 @@ namespace LiteNPC {
     }
 
     void NPC::setHand(const ItemStack &item) {
-        hand = item.clone();
+        hand = ItemStack(item);
         auto pkt = make_unique<MobEquipmentPacket>(runtimeId, hand, 0, 0, ContainerID::Inventory);
         newAction(move(pkt));
     }
@@ -386,7 +397,7 @@ namespace LiteNPC {
         Util::makeUnique(newSkin);
         BinaryStream bs;
         newSkin.write(bs);
-        DB.set(name, bs.getAndReleaseData());
+        DB.set(name, bs.mBuffer);
         for (auto [id, npc]: loadedNPC)
             if (npc->skinName == name) npc->updateSkin();
     }

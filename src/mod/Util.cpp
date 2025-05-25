@@ -11,6 +11,8 @@
 #include <mc/deps/json/Reader.h>
 #include <mc/deps/json/ValueIterator.h>
 #include <mc/network/packet/PlaySoundPacket.h>
+#include <mc/deps/ecs/gamerefs_entity/EntityContext.h>
+#include <mc/deps/ecs/gamerefs_entity/GameRefsEntity.h>
 
 #include "lodepng.h"
 
@@ -92,6 +94,11 @@ namespace LiteNPC::Util {
         return ss.str();
     }
 
+    Vec2 rotationFromDirection(Vec3 dir) {
+        dir = dir.normalize();
+        return {std::atan2(dir.z, dir.x), std::asin(dir.y)};
+    }
+
     void makeUnique(SerializedSkin& skin) {
         skin.mId = "Custom" + mce::UUID::random().asString();
         skin.mFullId = *skin.mId + mce::UUID::random().asString();
@@ -99,7 +106,7 @@ namespace LiteNPC::Util {
         std::stringstream stream;
         stream << std::hex << ll::random_utils::rand<uint64>();
         skin.mPlayFabId = stream.str();
-        skin.setIsTrustedSkin(true);
+        skin.mIsTrustedSkin = TrustedSkinFlag::True;
     }
 
     bool readImage(const filesystem::path &path, mce::Image &image) {
@@ -108,7 +115,7 @@ namespace LiteNPC::Util {
         vector<uchar> data;
         auto err = lodepng::decode(data, image.mWidth, image.mHeight, path.string());
         if (err) return false;
-        image.mImageBytes = mce::Blob(data.size());
+        image.resizeImageBytesToFitImageDescription();
         std::copy(data.begin(), data.end(), **image.mImageBytes->mBlob);
         return true;
     }
@@ -187,6 +194,15 @@ namespace LiteNPC::Util {
             return true;
         });
         return player_list;
+    }
+
+    Actor* getRandomActor() {
+        for (auto& i : LEVEL->getEntities()) {
+            if (i.has_value() && i.tryUnwrap().has_value()) {
+                return &i.tryUnwrap().get();
+            }
+        }
+        return nullptr;
     }
 
 } // namespace LiteNPC::Util

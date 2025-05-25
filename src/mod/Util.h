@@ -11,6 +11,7 @@ namespace LiteNPC::Util {
     std::vector<std::string> split(std::string s, const std::string& delimiter = " ");
     std::unordered_set<Player*> getAllPlayers();
     std::string contatenateDialogue(const std::deque<std::string>& dialogue);
+    Vec2 rotationFromDirection(Vec3 dir);
 
     int setTimeout(const function<void()>&, int ms = 50);
     int setInterval(const function<void()>&, int ms = 50, int count = 0);
@@ -23,5 +24,6 @@ namespace LiteNPC::Util {
 
     void sendPlaySound(Vec3 pos, const std::string& name, float volume = 1, float pitch = 1);
     std::unordered_set<Player*> getPlayersNear(Vec3 pos, float distance);
+    Actor* getRandomActor();
 
 } // namespace OreShop::Util
