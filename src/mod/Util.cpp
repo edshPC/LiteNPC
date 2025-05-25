@@ -96,7 +96,8 @@ namespace LiteNPC::Util {
 
     Vec2 rotationFromDirection(Vec3 dir) {
         dir = dir.normalize();
-        return {std::atan2(dir.z, dir.x), std::asin(dir.y)};
+        Vec2 res{std::atan2(dir.z, dir.x), std::asin(dir.y)};
+        return res * (180.0f / std::numbers::pi_v<float>);
     }
 
     void makeUnique(SerializedSkin& skin) {
