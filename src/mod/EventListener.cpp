@@ -40,7 +40,8 @@ namespace LiteNPC {
     unordered_map<Player*, string> waitingEmotions;
     AUTO_TI_HOOK(SendEmotion, ServerNetworkHandler, $handle, void, NetworkIdentifier const& source,
                  EmotePacket const& packet) {
-        auto sp = _getServerPlayer(source, packet.mClientSubId);
+        auto sp = ll::memory::dAccess<ServerNetworkHandler>(this, -16)
+            ._getServerPlayer(source, packet.mClientSubId);
         if (sp && waitingEmotions.contains(sp)) {
             NPC::saveEmotion(waitingEmotions.at(sp), packet.mPieceId);
             waitingEmotions.erase(sp);
@@ -50,8 +51,8 @@ namespace LiteNPC {
 
     AUTO_TI_HOOK(ChangeSkin, ServerNetworkHandler, $handle, void, NetworkIdentifier const& source,
                  PlayerSkinPacket const& pkt) {
-        auto pl = ll::memory::dAccess<ServerNetworkHandler>(this, -16).
-            _getServerPlayer(source, pkt.mClientSubId);
+        auto pl = ll::memory::dAccess<ServerNetworkHandler>(this, -16)
+            ._getServerPlayer(source, pkt.mClientSubId);
         if (pl) {
             auto& skin = *pkt.mSkin;
             pl->updateSkin(skin, static_cast<int>(pkt.mClientSubId));
