@@ -75,7 +75,7 @@ namespace LiteNPC {
 
     AUTO_TI_HOOK(Tick, Level, $tick, void) {
         origin();
-        NPC::tickAll(getCurrentTick().tickID);
+        Entity::tickAll(getCurrentTick().tickID);
     }
 
     unordered_set<string> blacklist = {"SpawnParticleEffectPacket", "LevelSoundEventPacket",

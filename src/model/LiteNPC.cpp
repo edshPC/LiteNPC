@@ -1,8 +1,10 @@
 #include "LiteNPC.h"
 #include "Global.h"
+#include "mod/NetworkPacket.h"
 
 #include <ll/api/chrono/GameChrono.h>
 
+#include "mc/network/MinecraftPackets.h"
 #include "mc/network/packet/AddPlayerPacket.h"
 #include "mc/network/packet/PlayerSkinPacket.h"
 #include "mc/network/packet/RemoveActorPacket.h"
@@ -21,22 +23,109 @@
 #include "mc/world/level/dimension/Dimension.h"
 #include "mc/world/level/BlockSource.h"
 #include "mc/world/level/block/Block.h"
+#include "mc/world/actor/ActorDefinitionIdentifier.h"
+#include "mc/entity/components/AttributesComponent.h"
 
 #include "ll/api/utils/RandomUtils.h"
 #include "ll/api/form/SimpleForm.h"
 
 namespace LiteNPC {
+    set<Entity*> tickingEntities;
     unordered_map<uint64, NPC*> loadedNPC;
     unordered_map<string, SerializedSkin> loadedSkins;
     const Vec3 eyeHeight = {.0f, 1.62f, .0f};
     deque<string> current_dialogue;
     deque<deque<string>> dialog_history = {{}};
 
-    NPC::NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player *)> cb) :
-            name(name), pos(pos), dim(dim), rot(rot), skinName(skin), callback(cb),
-            actorId(LEVEL->getNewUniqueID()), runtimeId(LEVEL->getNextRuntimeID()), uuid(mce::UUID::random()),
-            minecart(LEVEL->getNewUniqueID(), LEVEL->getNextRuntimeID()),
-            size(1), freeTick(0), hand(ItemStack::EMPTY_ITEM()), isSitting(false) {}
+    Entity::Entity(const string& name, Vec3 pos, int dim, Vec2 rot):
+        name(name), pos(pos), dim(dim), rot(rot),
+        actorId(LEVEL->getNewUniqueID()), runtimeId(LEVEL->getNextRuntimeID()) {}
+
+    Entity::~Entity() {
+        tickingEntities.erase(this);
+    }
+
+    void Entity::spawnAll(Player *pl) {
+        for (auto en : tickingEntities) en->spawn(pl);
+    }
+
+    void Entity::tickAll(uint64 tick) {
+        for (auto en : tickingEntities) en->tick(tick);
+        if (tick % 20 == 0) NPC::updateDialogue();
+    }
+
+    void Entity::loadEntity(Entity *entity) {
+        tickingEntities.insert(entity);
+        for (auto pl: Util::getAllPlayers()) entity->spawn(pl);
+    }
+
+    void Entity::tick(uint64 tick) {
+    }
+
+    void Entity::updateActorData() {
+        auto pkt = static_pointer_cast<SetActorDataPacket>(MinecraftPackets::createPacket(MinecraftPacketIds::SetActorData));
+        pkt->mId = runtimeId;
+        putActorData(pkt->mPackedItems);
+        pkt->sendToClients();
+    }
+
+    void Entity::remove() {
+        for (auto pl : Util::getAllPlayers()) despawn(pl);
+        delete this;
+    }
+
+    void Entity::despawn(Player *pl) {
+        RemoveActorPacket pkt;
+        pkt.mEntityId = actorId;
+        pl->sendNetworkPacket(pkt);
+    }
+
+    void Entity::putActorData(vector<unique_ptr<DataItem>> &data) {
+        data.clear();
+        data.emplace_back(DataItem::create(ActorDataIDs::Name, name)); // name
+        data.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size)); // size
+        data.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) showNametag));
+        int64 flag = 0, flag_extended = 0;
+        for (auto f : flags) {
+            flag |= 1ll << static_cast<int>(f);
+            flag_extended |= 1ll << static_cast<int>(f) - 64;
+        }
+        data.emplace_back(DataItem::create(ActorDataIDs::Reserved0, flag));
+        data.emplace_back(DataItem::create(ActorDataIDs::Reserved092, flag_extended));
+    }
+
+    void Entity::rename(const string &name) {
+        if (this->name != name) {
+            this->name = name;
+            updateActorData();
+        }
+    }
+
+    void Entity::resize(float size) {
+        if (this->size != size) {
+            this->size = size;
+            updateActorData();
+        }
+    }
+
+    void Entity::setShowNametag(bool showNametag) {
+        if (this->showNametag != showNametag) {
+            this->showNametag = showNametag;
+            updateActorData();
+        }
+    }
+
+    // ---------- NPC ----------
+
+    NPC::NPC(const string& name, Vec3 pos, int dim, Vec2 rot, const string &skin, const function<void(Player *)> &cb):
+        Entity(name, pos, dim, rot),
+        skinName(skin), callback(cb), uuid(mce::UUID::random()),
+        minecart(LEVEL->getNewUniqueID(), LEVEL->getNextRuntimeID()),
+        freeTick(0), hand(ItemStack::EMPTY_ITEM()), isSitting(false) {}
+
+    NPC::~NPC() {
+        loadedNPC.erase(runtimeId);
+    }
 
     void NPC::remove(bool instant) {
         if (instant) freeTick = 0;
@@ -45,10 +134,11 @@ namespace LiteNPC {
         newAction(move(pkt));
         int delay = freeTick + 1 - LEVEL->getCurrentTick().tickID;
         Util::setTimeout([this] {
-            loadedNPC.erase(runtimeId);
             delete this;
         }, delay * 50);
     }
+
+    void NPC::remove() { remove(false); }
 
     void NPC::newAction(unique_ptr<Packet> pkt, uint64 delay, function<void()> cb) {
         uint64 tick = std::max(LEVEL->getCurrentTick().tickID + 1, freeTick);
@@ -57,6 +147,7 @@ namespace LiteNPC {
     }
 
     void NPC::tick(uint64 tick) {
+        Entity::tick(tick);
         if (auto it = actions.begin(); it != actions.end() && tick >= it->first) {
             if(it->second.pkt) it->second.pkt->sendToClients();
             if(it->second.cb) it->second.cb();
@@ -129,20 +220,6 @@ namespace LiteNPC {
         newAction(move(pkt));
     }
 
-    void NPC::putActorData(vector<unique_ptr<DataItem>> &data) {
-        data.clear();
-        data.emplace_back(DataItem::create(ActorDataIDs::Name, name)); // name
-        data.emplace_back(DataItem::create(ActorDataIDs::Reserved038, size)); // size
-        data.emplace_back(DataItem::create(ActorDataIDs::NametagAlwaysShow, (schar) 1));
-        int64 flag = 0, flag_extended = 0;
-        for (auto f : flags) {
-            flag |= 1ll << static_cast<int>(f);
-            flag_extended |= 1ll << static_cast<int>(f) - 64;
-        }
-        data.emplace_back(DataItem::create(ActorDataIDs::Reserved0, flag));
-        data.emplace_back(DataItem::create(ActorDataIDs::Reserved092, flag_extended));
-    }
-
     void NPC::updateDialogue() {
         if (!current_dialogue.empty()) {
             TextPacket pkt;
@@ -166,6 +243,7 @@ namespace LiteNPC {
         }
         form.sendTo(*pl);
     }
+
 
     void NPC::emote(string emoteName) {
         if (!emotionsConfig.emotions.contains(emoteName)) return;
@@ -344,30 +422,11 @@ namespace LiteNPC {
     NPC *NPC::create(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player *pl)> callback) {
         NPC *npc = new NPC(name, pos + Vec3(0.5f, 0.0f, 0.5f), dim, rot, skin, callback);
         loadedNPC[npc->runtimeId] = npc;
-        for (auto pl: Util::getAllPlayers()) npc->spawn(pl);
+        loadEntity(npc);
         return npc;
     }
 
-    void NPC::spawnAll(Player *pl) {
-        for (auto [id, npc]: loadedNPC) npc->spawn(pl);
-    }
-
-    void NPC::tickAll(uint64 tick) {
-        for (auto [id, npc]: loadedNPC) npc->tick(tick);
-        if (tick % 20 == 0) updateDialogue();
-    }
-
-    void NPC::rename(string name) {
-        this->name = name;
-        updateActorData();
-    }
-
-    void NPC::resize(float size) {
-        this->size = size;
-        updateActorData();
-    }
-
-    void NPC::setSkin(string skin) {
+    void NPC::setSkin(const string &skin) {
         this->skinName = skin;
         updateSkin();
     }
@@ -422,4 +481,34 @@ namespace LiteNPC {
         }
     }
 
+    FloatingText::FloatingText(const string &text, Vec3 pos, int dim):
+        Entity(text, pos, dim, {}) {
+        size = 0.0001f;
+    }
+
+    void FloatingText::spawn(Player *pl) {
+        BinaryStream bs;
+        bs.writeVarInt64(actorId.rawID, nullptr, nullptr); //actorId
+        bs.writeUnsignedVarInt64(runtimeId.rawID, nullptr, nullptr); //actorRId
+        bs.writeString("minecraft:armor_stand", nullptr, nullptr); //type
+        bs.writeFloat(pos.x, nullptr, nullptr); // pos
+        bs.writeFloat(pos.y, nullptr, nullptr);
+        bs.writeFloat(pos.z, nullptr, nullptr);
+        for (int i = 0; i < 7; i++) bs.writeFloat(0, nullptr, nullptr);
+        bs.writeUnsignedVarInt(0, nullptr, nullptr); //0 atts
+        vector<std::unique_ptr<DataItem>> items;
+        putActorData(items);
+        bs.writeType(items);
+        bs.writeUnsignedVarInt(0, nullptr, nullptr); //0 props
+        bs.writeUnsignedVarInt(0, nullptr, nullptr); //0 links
+        bs.writeUnsignedVarInt(0, nullptr, nullptr); //end
+        auto pkt = lse::api::NetworkPacket<MinecraftPacketIds::AddActor>(std::move(bs.mBuffer));
+        pl->sendNetworkPacket(pkt);
+    }
+
+    FloatingText* FloatingText::create(string text, Vec3 pos, int dim) {
+        auto ft = new FloatingText(text, pos, dim);
+        loadEntity(ft);
+        return ft;
+    }
 }

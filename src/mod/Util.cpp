@@ -96,7 +96,7 @@ namespace LiteNPC::Util {
 
     Vec2 rotationFromDirection(Vec3 dir) {
         dir = dir.normalize();
-        Vec2 res{std::asin(dir.y), std::atan2(dir.z, dir.x)};
+        Vec2 res{-std::asin(dir.y), std::atan2(dir.z, dir.x)};
         res *= 180.0f / std::numbers::pi_v<float>;
         res.z -= 90;
         return res;

@@ -15,31 +15,80 @@
 #define LNAPI __declspec(dllimport)
 #endif
 
-using namespace std;
-
 namespace LiteNPC {
+
+	using namespace std;
+
+	class Entity {
+	protected:
+		string name;
+		Vec3 pos;
+		Vec2 rot;
+		int dim;
+		const ActorUniqueID actorId;
+		const ActorRuntimeID runtimeId;
+		float size = 1;
+		bool showNametag = true;
+		std::unordered_set<ActorFlags> flags;
+	public:
+		Entity(const string& name, Vec3 pos, int dim, Vec2 rot);
+		virtual ~Entity();
+
+		virtual void spawn(Player* pl) = 0;
+
+		virtual void tick(uint64 tick);
+		virtual void updateActorData();
+		virtual void remove();
+
+		void despawn(Player* pl);
+		void putActorData(vector<unique_ptr<DataItem>>& data);
+
+		LNAPI void rename(const string &name);
+		LNAPI void resize(float size);
+		LNAPI void setShowNametag(bool showNametag);
+
+		uint64 getRId() { return runtimeId; }
+
+		LNAPI static void spawnAll(Player* pl);
+		static void tickAll(uint64 tick);
+		static void loadEntity(Entity* entity);
+	};
+
 	struct Action {
 		unique_ptr<Packet> pkt;
 		function<void()> cb;
 	};
-	class NPC {
+
+	class NPC : public Entity {
+		string skinName;
+		const mce::UUID uuid;
+		function<void(Player* pl)> callback;
+		std::map<uint64, Action> actions;
+		uint64 freeTick;
+		ItemStack hand;
+		bool isSitting;
+		struct Minecart {
+			ActorUniqueID actorId;
+			ActorRuntimeID runtimeId;
+		} minecart;
+
 	public:
-		LNAPI NPC(string name, Vec3 pos, int dim, Vec2 rot, string skin, function<void(Player*)> cb);
+		LNAPI NPC(const string& name, Vec3 pos, int dim, Vec2 rot, const string& skin, const function<void(Player*)>& cb);
+		~NPC() override;
+
+		void spawn(Player* pl) override;
+		void tick(uint64 tick) override;
+		void updateActorData() override;
 
 		void onUse(Player* pl);
-		void spawn(Player* pl);
 		void updateSkin(Player* pl = nullptr);
 		void updatePosition();
-		void updateActorData();
-		void putActorData(vector<unique_ptr<DataItem>>& data);
-		LNAPI void remove(bool instant = false);
+		LNAPI void remove(bool instant);
+		LNAPI void remove() override;
 		LNAPI void newAction(unique_ptr<Packet> pkt, uint64 delay = 1, function<void()> cb = {});
-		void tick(uint64 tick);
 		LNAPI void setCallback(function<void(Player*)> cb);
 
-		LNAPI void rename(string name);
-		LNAPI void resize(float size);
-		LNAPI void setSkin(string skinName);
+		LNAPI void setSkin(const string &skinName);
 		LNAPI void setHand(const ItemStack &item);
 		LNAPI void emote(string emoteName);
 		LNAPI void moveTo(Vec3 pos, float speed = 1);
@@ -62,39 +111,23 @@ namespace LiteNPC {
 		LNAPI void stop();
 
 		LNAPI static NPC* create(string name, Vec3 pos, int dim = 0, Vec2 rot = {}, string skin = {}, function<void(Player*)> cb = {});
-		LNAPI static void spawnAll(Player* pl);
 		LNAPI static NPC* getByRId(unsigned long long rId);
 		LNAPI static vector<NPC*> getAll();
 		LNAPI static unordered_map<string, SerializedSkin>& getLoadedSkins();
 		LNAPI static void saveSkin(string name, SerializedSkin& skin);
 		LNAPI static void saveEmotion(string name, string emotionUuid);
-		static void init();
-		static void tickAll(uint64 tick);
-		static void updateDialogue();
 		LNAPI static void openDialogueHistory(Player* pl);
+		static void init();
+		static void updateDialogue();
+	};
 
-		uint64 getRId() { return runtimeId; }
+	class FloatingText : public Entity {
+	public:
+		FloatingText(const string& text, Vec3 pos, int dim);
 
-	private:
-		string name;
-		Vec3 pos;
-		Vec2 rot;
-		int dim;
-		string skinName;
-		float size;
-		const ActorUniqueID actorId;
-		const ActorRuntimeID runtimeId;
-		const mce::UUID uuid;
-		function<void(Player* pl)> callback;
-		std::map<uint64, Action> actions;
-		std::unordered_set<ActorFlags> flags;
-		uint64 freeTick;
-		ItemStack hand;
-		bool isSitting;
-		struct Minecart {
-			ActorUniqueID actorId;
-			ActorRuntimeID runtimeId;
-		} minecart;
+		void spawn(Player* pl) override;
+
+		LNAPI static FloatingText* create(string text, Vec3 pos, int dim = 0);
 	};
 
 }
