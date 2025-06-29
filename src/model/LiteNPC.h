@@ -29,6 +29,7 @@ namespace LiteNPC {
 		const ActorRuntimeID runtimeId;
 		float size = 1;
 		bool showNametag = true;
+		bool enabled = true;
 		std::unordered_set<ActorFlags> flags;
 	public:
 		Entity(const string& name, Vec3 pos, int dim, Vec2 rot);
@@ -40,9 +41,11 @@ namespace LiteNPC {
 		virtual void updateActorData();
 		virtual void remove();
 
-		void despawn(Player* pl);
+		void despawn(Player* pl = nullptr);
 		void putActorData(vector<unique_ptr<DataItem>>& data);
 
+		LNAPI void disable();
+		LNAPI void enable();
 		LNAPI void rename(const string &name);
 		LNAPI void resize(float size);
 		LNAPI void setShowNametag(bool showNametag);

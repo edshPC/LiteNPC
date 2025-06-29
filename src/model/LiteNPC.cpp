@@ -46,7 +46,7 @@ namespace LiteNPC {
     }
 
     void Entity::spawnAll(Player *pl) {
-        for (auto en : tickingEntities) en->spawn(pl);
+        for (auto en : tickingEntities) if (en->enabled) en->spawn(pl);
     }
 
     void Entity::tickAll(uint64 tick) {
@@ -70,14 +70,15 @@ namespace LiteNPC {
     }
 
     void Entity::remove() {
-        for (auto pl : Util::getAllPlayers()) despawn(pl);
+        despawn();
         delete this;
     }
 
     void Entity::despawn(Player *pl) {
         RemoveActorPacket pkt;
         pkt.mEntityId = actorId;
-        pl->sendNetworkPacket(pkt);
+        if (pl) pl->sendNetworkPacket(pkt);
+        else pkt.sendToClients();
     }
 
     void Entity::putActorData(vector<unique_ptr<DataItem>> &data) {
@@ -92,6 +93,18 @@ namespace LiteNPC {
         }
         data.emplace_back(DataItem::create(ActorDataIDs::Reserved0, flag));
         data.emplace_back(DataItem::create(ActorDataIDs::Reserved092, flag_extended));
+    }
+
+    void Entity::disable() {
+        if (!enabled) return;
+        enabled = false;
+        despawn();
+    }
+
+    void Entity::enable() {
+        if (enabled) return;
+        enabled = true;
+        for (auto pl : Util::getAllPlayers()) spawn(pl);
     }
 
     void Entity::rename(const string &name) {
@@ -487,6 +500,7 @@ namespace LiteNPC {
     }
 
     void FloatingText::spawn(Player *pl) {
+        if (pl->getDimensionId().id != dim) return;
         BinaryStream bs;
         bs.writeVarInt64(actorId.rawID, nullptr, nullptr); //actorId
         bs.writeUnsignedVarInt64(runtimeId.rawID, nullptr, nullptr); //actorRId
